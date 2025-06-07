@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AccountController;
+use App\Http\Controllers\BatchController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -22,6 +24,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::controller(AccountController::class)->group(function() {
+        Route::get('/accounts', 'display')->name('accounts.display');
+    });
+
+    Route::controller(BatchController::class)->group(function(){
+        Route::get('/batches', 'display')->name('batches.display');
+    });
 });
 
 require __DIR__.'/auth.php';

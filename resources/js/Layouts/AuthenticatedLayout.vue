@@ -14,8 +14,8 @@ const drawer = ref(null)
             
             <v-app-bar-title>
                 <div>
-                    <p class="font-bold">5ID ROAMS</p>
-                    <p class="text-xs">5th Infantry Division Recruitment Office - Application and Management System</p>
+                    <p class="font-bold">UBAO-IME</p>
+                    <p class="text-xs">Inventory, Monitoring, and Evaluation of Business Enterprise's Income and Expenses</p>
                 </div>
             </v-app-bar-title>
 
@@ -35,20 +35,14 @@ const drawer = ref(null)
                   <v-list-item v-bind="props" prepend-icon="mdi-cog" title="Setup"></v-list-item>
               </template>
   
-              <NavLink :icon="`mdi-account-group`">
-                  <v-list-item-title class="navigation" role="link">Users</v-list-item-title>
+              <NavLink :href="route('accounts.display')" :active="route().current('accounts.display')" :icon="`mdi-account-group`">
+                  <v-list-item-title class="navigation" role="link">Accounts</v-list-item-title>
               </NavLink>
-              <NavLink :icon="`mdi-home-group`">
-                  <v-list-item-title class="navigation" role="link">Batches</v-list-item-title>
+              <NavLink :href="route('batches.display')" :active="route().current('batches.display')" :icon="`mdi-school`">
+                  <v-list-item-title class="navigation" role="link">Campuses</v-list-item-title>
               </NavLink>
-              <NavLink :icon="`mdi-shield-star`">
-                  <v-list-item-title class="navigation" role="link">Ranks</v-list-item-title>
-              </NavLink>
-              <NavLink :icon="`mdi-office-building`">
-                  <v-list-item-title class="navigation" role="link">Designation</v-list-item-title>
-              </NavLink>
-              <NavLink :icon="`mdi-wrench`">
-                  <v-list-item-title class="navigation" role="link">Skills</v-list-item-title>
+              <NavLink :icon="`mdi-cash-multiple`">
+                  <v-list-item-title class="navigation" role="link">Enterprises</v-list-item-title>
               </NavLink>
             </v-list-group>
 
@@ -57,39 +51,26 @@ const drawer = ref(null)
                   <v-list-item v-bind="props" prepend-icon="mdi-handshake" title="Transaction"></v-list-item>
               </template>
   
-              <NavLink :icon="`mdi-file-document-multiple`">
-                  <v-list-item-title class="navigation" role="link">Submission</v-list-item-title>
+              <NavLink :icon="`mdi-package`">
+                  <v-list-item-title class="navigation" role="link">Inventory</v-list-item-title>
               </NavLink>
-              <NavLink :icon="`mdi-file-find`">
-                  <v-list-item-title class="navigation" role="link">Initial Review</v-list-item-title>
+              <NavLink :icon="`mdi-cash-check`">
+                  <v-list-item-title class="navigation" role="link">Income</v-list-item-title>
               </NavLink>
-              <NavLink :icon="`mdi-file-check`">
-                  <v-list-item-title class="navigation" role="link">Validation</v-list-item-title>
+              <NavLink :icon="`mdi-cash-remove`">
+                  <v-list-item-title class="navigation" role="link">Expenses</v-list-item-title>
               </NavLink>
-              <NavLink :icon="`mdi-dumbbell`">
-                  <v-list-item-title class="navigation" role="link">PFT Grade</v-list-item-title>
-              </NavLink>
-              <NavLink :icon="`mdi-medical-bag`">
-                  <v-list-item-title class="navigation" role="link">Initial PME</v-list-item-title>
-              </NavLink>
-              <NavLink :icon="`mdi-tools`">
-                  <v-list-item-title class="navigation" role="link">Trade Test</v-list-item-title>
-              </NavLink>
-              <NavLink :icon="`mdi-medical-bag`">
-                  <v-list-item-title class="navigation" role="link">Final PME</v-list-item-title>
-              </NavLink>
-              <NavLink :icon="`mdi-thought-bubble`">
-                  <v-list-item-title class="navigation" role="link">Board Interview</v-list-item-title>
-              </NavLink>
-              <NavLink :icon="`mdi-medal`">
-                  <v-list-item-title class="navigation" role="link">Ranking</v-list-item-title>
+              <NavLink :icon="`mdi-trending-up`">
+                  <v-list-item-title class="navigation" role="link">Evaluation</v-list-item-title>
               </NavLink>
             </v-list-group>
   
           </v-list>
         </v-navigation-drawer>
-      <v-main>
-        <!--  -->
+      <v-main class="bg-stone-50">
+        <div class="py-4">
+            <slot/>
+        </div>
       </v-main>
     </v-app>
   </template>

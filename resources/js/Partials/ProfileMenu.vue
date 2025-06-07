@@ -26,7 +26,10 @@
                     </v-row>
                     <v-divider class="border-opacity-75 my-3" :thickness="2"></v-divider>
                     <div class="mb-2">
-                        <v-btn block variant="tonal" class="text-none" color="green-darken-4" prepend-icon="mdi-account" @click="logout" aria-label="Logout">View Profile</v-btn>
+                        <SecondaryButtonWithIconTonalVariant :href="route('profile.edit')">
+                            <v-icon icon="mdi-account" class="mr-3"></v-icon>
+                            View Profile
+                        </SecondaryButtonWithIconTonalVariant>
                     </div>
                     <div>
                         <LogoutButton :href="route('logout')" method="post" as="button">
@@ -42,6 +45,7 @@
 
 <script setup>
 import LogoutButton from '@/Components/LogoutButton.vue';
+import SecondaryButtonWithIconTonalVariant from '@/Components/SecondaryButtonWithIconTonalVariant.vue';
 
 
 const props = defineProps({
