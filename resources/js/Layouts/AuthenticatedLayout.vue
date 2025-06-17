@@ -38,12 +38,10 @@ const drawer = ref(null)
               <NavLink :href="route('accounts.display')" :active="route().current('accounts.display')" :icon="`mdi-account-group`">
                   <v-list-item-title class="navigation" role="link">Accounts</v-list-item-title>
               </NavLink>
-              <NavLink :href="route('batches.display')" :active="route().current('batches.display')" :icon="`mdi-school`">
+              <NavLink :href="route('campuses.display')" :active="route().current('campuses.display')" :icon="`mdi-school`">
                   <v-list-item-title class="navigation" role="link">Campuses</v-list-item-title>
               </NavLink>
-              <NavLink :icon="`mdi-cash-multiple`">
-                  <v-list-item-title class="navigation" role="link">Enterprises</v-list-item-title>
-              </NavLink>
+              
             </v-list-group>
 
             <v-list-group value="Transaction">
@@ -51,7 +49,10 @@ const drawer = ref(null)
                   <v-list-item v-bind="props" prepend-icon="mdi-handshake" title="Transaction"></v-list-item>
               </template>
   
-              <NavLink :icon="`mdi-package`">
+              <NavLink :href="route('enterprises.display')" :active="route().current('enterprises.display') || route().current('enterprises.view') || route().current('enterprises.fetch')" :icon="`mdi-cash-multiple`">
+                  <v-list-item-title class="navigation" role="link">Enterprises</v-list-item-title>
+              </NavLink>
+              <NavLink :href="route('inventory.display')" :active="route().current('inventory.display') || route().current('inventory.view')" :icon="`mdi-package`">
                   <v-list-item-title class="navigation" role="link">Inventory</v-list-item-title>
               </NavLink>
               <NavLink :icon="`mdi-cash-check`">

@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\BatchController;
+use App\Http\Controllers\CampusController;
+use App\Http\Controllers\EnterpriseController;
+use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -29,8 +32,28 @@ Route::middleware('auth')->group(function () {
         Route::get('/accounts', 'display')->name('accounts.display');
     });
 
-    Route::controller(BatchController::class)->group(function(){
-        Route::get('/batches', 'display')->name('batches.display');
+    Route::controller(CampusController::class)->group(function(){
+        Route::get('/campuses', 'display')->name('campuses.display');
+    });
+
+    Route::controller(EnterpriseController::class)->group(function(){
+        Route::get('/enterprises', 'display')->name('enterprises.display');
+    });
+
+    Route::controller(EnterpriseController::class)->group(function(){
+        Route::get('/enterprises/{id}/view', 'view')->name('enterprises.view');
+    });
+
+    Route::controller(EnterpriseController::class)->group(function(){
+        Route::get('/enterprises/{id}/view/{th_id}/view', 'fetch')->name('enterprises.fetch');
+    });
+
+    Route::controller(InventoryController::class)->group(function(){
+        Route::get('/inventory', 'display')->name('inventory.display');
+    });
+
+    Route::controller(InventoryController::class)->group(function(){
+        Route::get('/inventory/{id}/view', 'view')->name('inventory.view');
     });
 });
 

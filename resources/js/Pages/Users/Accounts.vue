@@ -42,7 +42,7 @@ import { Head } from '@inertiajs/vue3';
                             <v-data-table
                             v-model:search="search"
                             :filter-keys="['name']" :headers="header"
-                            :items="items"
+                            :items="items" hover
                             >
                                 <template v-slot:header.stock>
                                     <div class="text-end">Stock</div>
