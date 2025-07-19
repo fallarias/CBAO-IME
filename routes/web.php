@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\AccountController;
-use App\Http\Controllers\BatchController;
+use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\CampusController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\EnterpriseController;
+use App\Http\Controllers\IncomeController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
@@ -30,10 +32,18 @@ Route::middleware('auth')->group(function () {
 
     Route::controller(AccountController::class)->group(function() {
         Route::get('/accounts', 'display')->name('accounts.display');
+        Route::post('/accounts', 'store')->name('accounts.store');
+        Route::put('/accounts/{id}', 'update')->name('accounts.update');
+        Route::put('/accounts/{id}', 'reset')->name('accounts.reset');
+        Route::put('/accounts/{id}', 'change_status')->name('accounts.change_status');
     });
 
     Route::controller(CampusController::class)->group(function(){
         Route::get('/campuses', 'display')->name('campuses.display');
+    });
+
+    Route::controller(CategoryController::class)->group(function(){
+        Route::get('/categories', 'display')->name('categories.display');
     });
 
     Route::controller(EnterpriseController::class)->group(function(){
@@ -54,6 +64,22 @@ Route::middleware('auth')->group(function () {
 
     Route::controller(InventoryController::class)->group(function(){
         Route::get('/inventory/{id}/view', 'view')->name('inventory.view');
+    });
+
+    Route::controller(IncomeController::class)->group(function(){
+        Route::get('/income', 'display')->name('income.display');
+    });
+
+    Route::controller(IncomeController::class)->group(function(){
+        Route::get('/income/{id}/view', 'view')->name('income.view');
+    });
+
+    Route::controller(ExpenseController::class)->group(function(){
+        Route::get('/expenses', 'display')->name('expenses.display');
+    });
+
+    Route::controller(ExpenseController::class)->group(function(){
+        Route::get('/expenses/{id}/view', 'view')->name('expenses.view');
     });
 });
 

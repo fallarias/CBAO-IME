@@ -1,7 +1,186 @@
 <script setup>
 import Breadcrumbs from '@/Components/Breadcrumbs.vue';
+import FlashMessage from '@/Components/FlashMessage.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
+import InputError from '@/Components/InputError.vue';
+import Swal from 'sweetalert2'
+import { ref, watch } from 'vue';
+
+const page = usePage();
+// const success = ref(page.props.flash?.success);
+
+// Optionally watch for changes
+// watch(() => page.props.flash, (newFlash) => {
+//     success.value = newFlash?.success;
+// });
+
+// Access props
+const clients = page.props.clients
+const client = {
+    client_id: '',
+    client_name: ''
+}
+const add_user_dialog = ref(false)
+const edit_user_dialog = ref(false)
+const reset_user_password_dialog = ref(false)
+const change_account_status_dialog = ref(false)
+
+// Define the form
+const edit_user_form = useForm({
+    user_id: '',
+    last_name: '',
+    first_name: '',
+    middle_name: '',
+    sex: '',
+    email: '',
+    campus: '',
+    designation: '',
+    reports: false,
+    enterprises: false,
+    inventory: false,
+    income: false,
+    expenses: false
+})
+
+// Define the method to fill the form
+function editUserData(index) {
+  const user = clients[index]
+  if (!user) return
+
+  edit_user_form.user_id = user.id
+
+  edit_user_form.last_name = user.full_name.split(',')[0].trim()
+  const firstAndMiddle = user.full_name.split(',')[1]?.trim().split(' ') || []
+
+  edit_user_form.first_name = firstAndMiddle[0] || ''
+  edit_user_form.middle_name = firstAndMiddle[1] || ''
+
+  edit_user_form.sex = user.sex
+  edit_user_form.email = user.email
+  edit_user_form.campus = user.campus_id      // Adjust if needed to use campus_id
+  edit_user_form.designation = user.designation
+  edit_user_form.reports = user.reports || false
+  edit_user_form.enterprises = user.enterprises || false
+  edit_user_form.inventory = user.inventory || false
+  edit_user_form.income = user.income || false
+  edit_user_form.expenses = user.expenses || false
+
+    edit_user_dialog.value = true;
+}
+
+function resetPassword(index){
+    console.log(index)
+    const user = clients[index]
+    if (!user) return
+
+    reset_password_form.client_id = user.id
+    reset_password_form.client_name = user.full_name
+
+    reset_user_password_dialog.value = true;
+}
+
+function changeAccountStatus(index){
+    console.log(index)
+    const user = clients[index]
+    if (!user) return
+
+    change_account_status_form.client_id = user.id
+    change_account_status_form.client_name = user.full_name
+    change_account_status_form.client_account_status = user.account_status
+
+    change_account_status_dialog.value = true;
+}
+
+watch(
+  () => page.props.flash,
+  (flash) => {
+    if (flash?.success) {
+      Swal.fire({
+        icon: 'success',
+        title: 'Success',
+        text: flash.success,
+        confirmButtonColor: '#3085d6'
+      })
+    } else if (flash?.error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: flash.error,
+        confirmButtonColor: '#d33'
+      })
+    }
+  },
+  { immediate: true }
+)
+
+
+const reset_password_form = useForm({
+    client_id: '',
+    client_name: ''
+})
+
+const change_account_status_form = useForm({
+    client_id: '',
+    client_name: '',
+    client_account_status: ''
+})
+
+
+const add_user_form = useForm({
+    last_name: '',
+    first_name: '',
+    middle_name: '',
+    sex: '',
+    email: '',
+    campus: '',
+    designation: '',
+    reports: false,
+    enterprises: false,
+    inventory: false,
+    income: false,
+    expenses: false
+})
+
+const submit = () => {
+    // console.log(add_user_form.data());
+    add_user_form.post(route('accounts.store'), {
+        onSuccess: () => {
+            add_user_form.reset()
+            add_user_dialog.value = false // Close dialog
+        },
+    });
+};
+
+const update = (id) => {
+    // console.log(add_user_form.data());
+    edit_user_form.put(route('accounts.update', id), {
+        onSuccess: () => {
+            edit_user_form.reset()
+            edit_user_dialog.value = false // Close dialog
+        },
+    });
+};
+
+const reset_password = (id) => {
+    // console.log(add_user_form.data());
+    reset_password_form.put(route('accounts.reset', id), {
+        onSuccess: () => {
+            reset_password_form.reset()
+            reset_user_password_dialog.value = false // Close dialog
+        },
+    });
+};
+
+const change_account_status = (id) => {
+    // console.log(add_user_form.data());
+    change_account_status_form.put(route('accounts.change_status', id), {
+        onSuccess: () => {
+            change_account_status_form.reset()
+            change_account_status_dialog.value = false // Close dialog
+        },
+    });
+};
 </script>
 
 <template>
@@ -17,14 +196,18 @@ import { Head } from '@inertiajs/vue3';
                 <div>
                     <Breadcrumbs :items="breadcrumbs_items"/>
                 </div>
+
                 <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg  border border-stone-200">
+
                     <div class="p-6 text-gray-900">
                         <v-card flat>
                             <v-card-title class="d-flex align-center pe-2">
                                 <v-icon icon="mdi-account-group"></v-icon> &nbsp;
-                                Accounts
+                                User Accounts
 
-                                <v-spacer></v-spacer>
+                                
+
+                                <!-- <v-spacer></v-spacer>
 
                                 <v-text-field
                                     v-model="search"
@@ -36,19 +219,86 @@ import { Head } from '@inertiajs/vue3';
                                     hide-details
                                     single-line
                                 ></v-text-field>
+
+                                <v-btn
+                                    class="ms-2 text-none tracking-normal"
+                                    prepend-icon="mdi-refresh"
+                                    rounded="l"
+                                    text="Refresh"
+                                    border
+                                    variant="tonal"
+                                    color="green-darken-4"
+                                    @click="onClick"
+                                ></v-btn>
+
+                                <v-btn
+                                    class="ms-2 text-none tracking-normal"
+                                    prepend-icon="mdi-plus"
+                                    rounded="l"
+                                    text="Add Product"
+                                    variant="flat"
+                                    color="green-darken-4"
+                                    @click="dialog = true"
+                                ></v-btn> -->
                             </v-card-title>
 
+                            <div class="mb-3">
+                                <v-row dense>
+                                    <v-col cols="12" md="9" lg="9">
+                                        <v-text-field
+                                            v-model="search"
+                                            density="compact"
+                                            label="Search"
+                                            prepend-inner-icon="mdi-magnify"
+                                            variant="solo-filled"
+                                            flat
+                                            hide-details
+                                            single-line class="border"
+                                        ></v-text-field>
+                                    </v-col>
+                                    <v-col cols="12" md="3" lg="3" class="text-end">
+                                        <div>
+                                            <v-btn
+                                            class="ms-2 text-none tracking-normal"
+                                            prepend-icon="mdi-refresh"
+                                            rounded="l"
+                                            text="Refresh"
+                                            border
+                                            variant="tonal"
+                                            color="green-darken-4"
+                                            @click="onClick"
+                                        ></v-btn>
+
+                                        <v-btn
+                                            class="ms-2 text-none tracking-normal"
+                                            prepend-icon="mdi-plus"
+                                            rounded="l"
+                                            text="Add User"
+                                            variant="flat"
+                                            color="green-darken-4"
+                                            @click="add_user_dialog = true"
+                                        ></v-btn>
+                                        </div>
+                                    </v-col>
+                                </v-row>
+                            </div>
+
                             <v-divider class="border-opacity-75" :thickness="2"></v-divider>
+
                             <v-data-table
-                            v-model:search="search"
-                            :filter-keys="['name']" :headers="header"
-                            :items="items" hover
+                                v-model:search="search"
+                                :filter-keys="['name']" :headers="header"
+                                :items="$page.props.clients" hover :loading="loading"
                             >
-                                <template v-slot:header.stock>
-                                    <div class="text-end">Stock</div>
+                                <template v-slot:loading>
+                                    <v-skeleton-loader type="table-row@5"></v-skeleton-loader>
                                 </template>
 
-                                <template v-slot:item.name="{ item }">
+                                <template v-slot:item.number="{ item }">
+                                    <div class="text-start">{{ item.number }}.</div>
+                                </template>
+
+                                <template v-slot:item.full_name="{ item }">
                                     <div class="d-flex align-center">
                                         <v-avatar class="mr-4">
                                             <v-img
@@ -58,8 +308,8 @@ import { Head } from '@inertiajs/vue3';
                                             ></v-img>
                                         </v-avatar>
                                         <div>
-                                            <p class="font-bold">{{ item.name }}</p>
-                                            <p class="text-sm text-disabled">user@email.com</p>
+                                            <p class="font-bold">{{ item.full_name }}</p>
+                                            <p class="text-sm text-disabled">{{ item.email }}</p>
                                         </div>
                                     </div>
                                 </template>
@@ -78,11 +328,14 @@ import { Head } from '@inertiajs/vue3';
                                     </div>
                                 </template>
 
-                                <template v-slot:item.status="{ item }">
+                                <template v-slot:item.account_status="{ item }">
                                     <div class="text-start">
                                     <v-chip
-                                        :color="item.status ? 'green' : 'red'"
-                                        :text="item.status ? 'Active' : 'Locked'"
+                                        :color="item.account_status === 'Verified' ? 'green' :
+                                                item.account_status === 'Not Verified' ? 'orange' :
+                                                item.account_status === 'Locked' ? 'slate' :
+                                                item.account_status === 'Deactivated' ? 'red' : 'grey'"
+                                        :text="item.account_status"
                                         class="text-uppercase"
                                         size="small"
                                         label
@@ -90,14 +343,455 @@ import { Head } from '@inertiajs/vue3';
                                     </div>
                                 </template>
 
+                                <template v-slot:item.last_updated="{ item }">
+                                    <td style="width: fit-content; white-space: nowrap;" class="text-start pa-4">
+                                        <p class="text-xs font-bold text-uppercase text-gray-500">Last Modified</p>
+                                        <p class="my-1">{{ item.date }}</p>
+                                        <p class="border-l-4 ps-1 border-emerald-600 text-xs font-bold text-uppercase text-emerald-600">{{ item.updated_by }}</p>
+                                    </td>
+                                </template>
+
                                 <template v-slot:item.actions="{ item }">
-                                    <v-btn variant="tonal" color="info" class="mr-2" icon="mdi-eye" size="x-small"></v-btn>
-                                    <v-btn variant="tonal" color="warning" class="mr-2"  icon="mdi-pencil" size="x-small"></v-btn>
-                                    <v-btn variant="tonal" color="error"  icon="mdi-delete" size="x-small"></v-btn>
+                                    <div class="text-end">
+                                        
+
+                                        <div class="inline-flex rounded-md shadow-xs" role="group">
+                                            <button type="button" class="inline-flex items-center px-4 py-4 text-sm font-medium text-white border border-gray-200 rounded-s-lg hover:bg-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 bg-blue-500">
+                                                <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm0 5a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm0 13a8.949 8.949 0 0 1-4.951-1.488A3.987 3.987 0 0 1 9 13h2a3.987 3.987 0 0 1 3.951 3.512A8.949 8.949 0 0 1 10 18Z"/>
+                                                </svg>
+                                            </button>
+                                            <button @click="editUserData(item.number-1)" type="button" class="inline-flex items-center px-4 py-4 text-sm font-medium text-white bg-yellow-500 border-t border-b border-gray-200 hover:bg-yellow-700 focus:z-10 focus:ring-2 focus:ring-yellow-700 focus:text-yellow-700">
+                                                <!-- <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                                                <path stroke="currentColor" stroke-linecap="square" stroke-linejoin="round" stroke-width="2" d="M7 19H5a1 1 0 0 1-1-1v-1a3 3 0 0 1 3-3h1m4-6a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm7.441 1.559a1.907 1.907 0 0 1 0 2.698l-6.069 6.069L10 19l.674-3.372 6.07-6.07a1.907 1.907 0 0 1 2.697 0Z"/>
+                                                </svg> -->
+
+                                                <v-icon size="15">mdi-account-edit</v-icon>
+                                            </button>
+                                            <button @click="resetPassword(item.number-1)" type="button" class="inline-flex items-center px-4 py-4 text-sm font-medium text-white bg-slate-500 border-t border-b border-gray-200 hover:bg-slate-700 hover:text-slate-700 focus:z-10 focus:ring-2 focus:ring-slate-700 focus:text-slate-700">
+                                                <!-- <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                                                
+                                                <path fill-rule="evenodd" d="M15 7a2 2 0 1 1 4 0v4a1 1 0 1 0 2 0V7a4 4 0 0 0-8 0v3H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2V7Zm-5 6a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0v-3a1 1 0 0 1 1-1Z" clip-rule="evenodd"/>
+                                                </svg> -->
+
+                                                <v-icon size="15">mdi-key-variant</v-icon>
+                                            </button>
+                                            <button v-if="item.account_status == 'Deactivated'" @click="changeAccountStatus(item.number-1)" type="button" class="inline-flex items-center px-4 py-4 text-sm font-medium text-white bg-emerald-500 border border-gray-200 rounded-e-lg hover:bg-emerald-700 hover:text-emerald-700 focus:z-10 focus:ring-2 focus:ring-emerald-700 focus:text-emerald-700">
+                                                <!-- <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M20 10H4v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8ZM9 13v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1Z" clip-rule="evenodd"/>
+                                                <path d="M2 6a2 2 0 0 1 2-2h16a2 2 0 1 1 0 4H4a2 2 0 0 1-2-2Z"/>
+                                                </svg> -->
+
+                                                <v-icon size="15">mdi-lock-open-variant</v-icon>
+                                            </button>
+
+                                            <button v-else @click="changeAccountStatus(item.number-1)" type="button" class="inline-flex items-center px-4 py-4 text-sm font-medium text-white bg-red-500 border border-gray-200 rounded-e-lg hover:bg-red-700 hover:text-emerald-700 focus:z-10 focus:ring-2 focus:ring-red-700 focus:text-red-700">
+                                                <!-- <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M20 10H4v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8ZM9 13v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1Z" clip-rule="evenodd"/>
+                                                <path d="M2 6a2 2 0 0 1 2-2h16a2 2 0 1 1 0 4H4a2 2 0 0 1-2-2Z"/>
+                                                </svg> -->
+
+                                                <v-icon size="15">mdi-lock</v-icon>
+                                            </button>
+                                        </div>
+
+                                        <!-- <v-btn variant="flat" color="warning" class="mr-2 text-none" prepend-icon="mdi-pencil" @click="editUserData(item.number-1)">Edit</v-btn>
+                                        <v-btn variant="flat" color="error" class="mr-2 text-none" prepend-icon="mdi-delete" @click="deleteProduct">Delete</v-btn> -->
+                                        <!-- <v-btn variant="tonal" color="warning" class="mr-2"  icon="mdi-pencil" size="x-small"></v-btn>
+                                        <v-btn variant="tonal" color="error"  icon="mdi-delete" size="x-small"></v-btn> -->
+                                    </div>
                                 </template>
                             </v-data-table>
                         </v-card>
                     </div>
+
+                    <!-- dialogs  -->
+                     <div>
+                        <!-- add new user account  -->
+                         <v-dialog v-model="add_user_dialog" persistent max-width="800">
+                            <v-card prepend-icon="mdi-account" title="Add User Account" class="pa-2">
+                                <v-card-text>
+                                    <div>
+                                        <form @submit.prevent="submit">
+                                            <div class="mb-4">
+                                                <v-row>
+                                                    <v-col>
+                                                        <div>
+                                                            <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900">Last name <span class="text-red-500">*</span></label>
+                                                            <input type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" placeholder="Enter your last name." required v-model="add_user_form.last_name"/>
+
+                                                            <InputError class="mt-2" :message="add_user_form.errors.last_name" />
+                                                        </div>
+                                                    </v-col>
+                                                    <v-col>
+                                                        <div>
+                                                            <label for="first_name" class="block mb-2 text-sm font-medium text-gray-900">First name <span class="text-red-500">*</span></label>
+                                                            <input type="text" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" placeholder="Enter your first name." required v-model="add_user_form.first_name"/>
+                                                        </div>
+                                                    </v-col>
+                                                    <v-col>
+                                                        <div>
+                                                            <label for="middle_name" class="block mb-2 text-sm font-medium text-gray-900">Middle name</label>
+                                                            <input type="text" id="middle_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" placeholder="Enter your middle name." v-model="add_user_form.middle_name"/>
+                                                        </div>
+                                                    </v-col>
+                                                </v-row>
+                                            </div>
+                                            <div class="mb-4">
+                                                <label for="countries" class="block mb-2 text-sm font-medium text-gray-900">Sex <span class="text-red-500">*</span></label>
+                                                <select id="countries" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" v-model="add_user_form.sex">
+                                                    <option disabled value="">-- Select Sex --</option>
+                                                    <option value="Male">Male</option>
+                                                    <option value="Female">Female</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-4">
+                                                <div>
+                                                    <label for="email_address" class="block mb-2 text-sm font-medium text-gray-900">Email address <span class="text-red-500">*</span></label>
+                                                    <input type="email" id="email_address" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" placeholder="Enter your email address." v-model="add_user_form.email"/>
+
+                                                    <InputError class="mt-2" :message="add_user_form.errors.email" />
+                                                </div>
+                                            </div>
+                                            <div class="mb-4">
+                                                <v-row>
+                                                    <v-col>
+                                                        <div>
+                                                            <label for="countries" class="block mb-2 text-sm font-medium text-gray-900">Campus <span class="text-red-500">*</span></label>
+                                                            <select id="countries" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" v-model="add_user_form.campus">
+                                                                <option disabled value="">-- Select Campus --</option>
+                                                                <option 
+                                                                    v-for="item in $page.props.campuses" 
+                                                                    :key="item.id" 
+                                                                    :value="item.id"
+                                                                >
+                                                                    {{ item.campus }}
+                                                                </option>
+                                                            </select>
+                                                        </div>
+                                                    </v-col>
+                                                    <v-col>
+                                                        <div>
+                                                            <label for="designation" class="block mb-2 text-sm font-medium text-gray-900">Designation <span class="text-red-500">*</span></label>
+                                                            <input type="text" id="designation" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" placeholder="John" required v-model="add_user_form.designation"/>
+                                                        </div>
+                                                    </v-col>
+                                                </v-row>
+                                            </div>
+                                            <div class="mb-2">
+                                                <p class="block mb-2 text-sm font-medium text-gray-900">Permissions (Optional)</p>
+                                                <div>
+                                                    <div class="flex p-4 mb-4 text-sm text-yellow-800 border border-yellow-300 rounded-lg bg-yellow-50" role="alert">
+                                                        <svg class="shrink-0 inline w-4 h-4 me-3 mt-[2px]" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
+                                                        </svg>
+                                                        <span class="sr-only">Warning</span>
+                                                        <div>
+                                                            <span class="font-medium">By default, the user can only access records within the selected campus. By checking one of these, you allow this user to:</span>
+                                                            <ul class="mt-1.5 list-disc list-inside">
+                                                                <li>View <span class="font-bold">all the records in each campuses</span>.</li>
+                                                                <li>Print and download reports of <span class="font-bold">all the records in each campuses</span></li>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <ul class="items-center w-full text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg sm:flex">
+                                                    <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r">
+                                                        <div class="flex items-center ps-3">
+                                                            <input id="reports" type="checkbox" value="" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-emerald-500 dark:focus:ring-emerald-600" v-model="add_user_form.reports">
+                                                            <label for="reports" class="w-full py-3 ms-2 text-sm text-gray-900">Reports</label>
+                                                        </div>
+                                                    </li>
+                                                    <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r">
+                                                        <div class="flex items-center ps-3">
+                                                            <input id="enterprises" type="checkbox" value="" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-emerald-500 dark:focus:ring-emerald-600" v-model="add_user_form.enterprises">
+                                                            <label for="enterprises" class="w-full py-3 ms-2 text-sm text-gray-900">Enterprises</label>
+                                                        </div>
+                                                    </li>
+                                                    <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r">
+                                                        <div class="flex items-center ps-3">
+                                                            <input id="inventory" type="checkbox" value="" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-emerald-500 dark:focus:ring-emerald-600" v-model="add_user_form.inventory">
+                                                            <label for="inventory" class="w-full py-3 ms-2 text-sm text-gray-900">Inventory</label>
+                                                        </div>
+                                                    </li>
+                                                    <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r">
+                                                        <div class="flex items-center ps-3">
+                                                            <input id="income" type="checkbox" value="" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-emerald-500 dark:focus:ring-emerald-600" v-model="add_user_form.income">
+                                                            <label for="income" class="w-full py-3 ms-2 text-sm text-gray-900">Income</label>
+                                                        </div>
+                                                    </li>
+                                                    <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r">
+                                                        <div class="flex items-center ps-3">
+                                                            <input id="expenses" type="checkbox" value="" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-emerald-500 dark:focus:ring-emerald-600" v-model="add_user_form.expenses">
+                                                            <label for="expenses" class="w-full py-3 ms-2 text-sm text-gray-900">Expenses</label>
+                                                        </div>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                            <v-divider class="my-4"></v-divider>
+                                            <div class="text-end">
+                                                <v-btn
+                                                    text="Close"
+                                                    variant="plain"
+                                                    @click="add_user_dialog = false"
+                                                ></v-btn>
+
+                                                <v-btn
+                                                    color="primary"
+                                                    text="Save"
+                                                    variant="tonal"
+                                                    type="submit"
+                                                    :class="{ 'opacity-25': add_user_form.processing }"
+                                                    :disabled="add_user_form.processing"
+                                                ></v-btn>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </v-card-text>
+                            </v-card>
+                        </v-dialog>
+
+                        <!-- edit user account  -->
+                         <v-dialog v-model="edit_user_dialog" persistent max-width="800">
+                            <v-card prepend-icon="mdi-account" title="Edit User Account" class="pa-2">
+                                <v-card-text>
+                                    <div>
+                                        <form @submit.prevent="update(edit_user_form.user_id)">
+                                            <div class="mb-4">
+                                                <v-row>
+                                                    <v-col>
+                                                        <div>
+                                                            <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900">Last name <span class="text-red-500">*</span></label>
+                                                            <input type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" placeholder="Enter your last name." required v-model="edit_user_form.last_name"/>
+
+                                                            <InputError class="mt-2" :message="edit_user_form.errors.last_name" />
+                                                        </div>
+                                                    </v-col>
+                                                    <v-col>
+                                                        <div>
+                                                            <label for="first_name" class="block mb-2 text-sm font-medium text-gray-900">First name <span class="text-red-500">*</span></label>
+                                                            <input type="text" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" placeholder="Enter your first name." required v-model="edit_user_form.first_name"/>
+                                                        </div>
+                                                    </v-col>
+                                                    <v-col>
+                                                        <div>
+                                                            <label for="middle_name" class="block mb-2 text-sm font-medium text-gray-900">Middle name</label>
+                                                            <input type="text" id="middle_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" placeholder="Enter your middle name." v-model="edit_user_form.middle_name"/>
+                                                        </div>
+                                                    </v-col>
+                                                </v-row>
+                                            </div>
+                                            <div class="mb-4">
+                                                <label for="countries" class="block mb-2 text-sm font-medium text-gray-900">Sex <span class="text-red-500">*</span></label>
+                                                <select id="countries" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" v-model="edit_user_form.sex">
+                                                    <option disabled value="">-- Select Sex --</option>
+                                                    <option value="Male">Male</option>
+                                                    <option value="Female">Female</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-4">
+                                                <div>
+                                                    <label for="email_address" class="block mb-2 text-sm font-medium text-gray-900">Email address <span class="text-red-500">*</span></label>
+                                                    <input type="email" id="email_address" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" placeholder="Enter your email address." v-model="edit_user_form.email"/>
+
+                                                    <InputError class="mt-2" :message="edit_user_form.errors.email" />
+                                                </div>
+                                            </div>
+                                            <div class="mb-4">
+                                                <v-row>
+                                                    <v-col>
+                                                        <div>
+                                                            <label for="countries" class="block mb-2 text-sm font-medium text-gray-900">Campus <span class="text-red-500">*</span></label>
+                                                            <select id="countries" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" v-model="edit_user_form.campus">
+                                                                <option disabled value="">-- Select Campus --</option>
+                                                                <option 
+                                                                    v-for="item in $page.props.campuses" 
+                                                                    :key="item.id" 
+                                                                    :value="item.id"
+                                                                >
+                                                                    {{ item.campus }}
+                                                                </option>
+                                                            </select>
+                                                        </div>
+                                                    </v-col>
+                                                    <v-col>
+                                                        <div>
+                                                            <label for="designation" class="block mb-2 text-sm font-medium text-gray-900">Designation <span class="text-red-500">*</span></label>
+                                                            <input type="text" id="designation" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" placeholder="John" required v-model="edit_user_form.designation"/>
+                                                        </div>
+                                                    </v-col>
+                                                </v-row>
+                                            </div>
+                                            <div class="mb-4"></div>
+                                            <div class="mb-2">
+                                                <p class="block mb-2 text-sm font-medium text-gray-900">Permissions (Optional)</p>
+                                                <div>
+                                                    <div class="flex p-4 mb-4 text-sm text-yellow-800 border border-yellow-300 rounded-lg bg-yellow-50" role="alert">
+                                                        <svg class="shrink-0 inline w-4 h-4 me-3 mt-[2px]" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
+                                                        </svg>
+                                                        <span class="sr-only">Warning</span>
+                                                        <div>
+                                                            <span class="font-medium">By default, the user can only access records within the selected campus. By checking one of these, you allow this user to:</span>
+                                                            <ul class="mt-1.5 list-disc list-inside">
+                                                                <li>View <span class="font-bold">all the records in each campuses</span>.</li>
+                                                                <li>Print and download reports of <span class="font-bold">all the records in each campuses</span></li>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <ul class="items-center w-full text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg sm:flex">
+                                                    <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r">
+                                                        <div class="flex items-center ps-3">
+                                                            <input id="reports" type="checkbox" value="" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-emerald-500 dark:focus:ring-emerald-600" v-model="edit_user_form.reports">
+                                                            <label for="reports" class="w-full py-3 ms-2 text-sm text-gray-900">Reports</label>
+                                                        </div>
+                                                    </li>
+                                                    <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r">
+                                                        <div class="flex items-center ps-3">
+                                                            <input id="enterprises" type="checkbox" value="" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-emerald-500 dark:focus:ring-emerald-600" v-model="edit_user_form.enterprises">
+                                                            <label for="enterprises" class="w-full py-3 ms-2 text-sm text-gray-900">Enterprises</label>
+                                                        </div>
+                                                    </li>
+                                                    <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r">
+                                                        <div class="flex items-center ps-3">
+                                                            <input id="inventory" type="checkbox" value="" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-emerald-500 dark:focus:ring-emerald-600" v-model="edit_user_form.inventory">
+                                                            <label for="inventory" class="w-full py-3 ms-2 text-sm text-gray-900">Inventory</label>
+                                                        </div>
+                                                    </li>
+                                                    <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r">
+                                                        <div class="flex items-center ps-3">
+                                                            <input id="income" type="checkbox" value="" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-emerald-500 dark:focus:ring-emerald-600" v-model="edit_user_form.income">
+                                                            <label for="income" class="w-full py-3 ms-2 text-sm text-gray-900">Income</label>
+                                                        </div>
+                                                    </li>
+                                                    <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r">
+                                                        <div class="flex items-center ps-3">
+                                                            <input id="expenses" type="checkbox" value="" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-emerald-500 dark:focus:ring-emerald-600" v-model="edit_user_form.expenses">
+                                                            <label for="expenses" class="w-full py-3 ms-2 text-sm text-gray-900">Expenses</label>
+                                                        </div>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                            <v-divider class="my-4"></v-divider>
+                                            <div class="text-end">
+                                                <v-btn
+                                                    text="Close"
+                                                    variant="plain"
+                                                    @click="edit_user_dialog = false"
+                                                ></v-btn>
+
+                                                <v-btn
+                                                    color="primary"
+                                                    text="Save Changes"
+                                                    variant="tonal"
+                                                    type="submit"
+                                                    :class="{ 'opacity-25': edit_user_form.processing }"
+                                                    :disabled="edit_user_form.processing"
+                                                ></v-btn>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </v-card-text>
+                            </v-card>
+                        </v-dialog>
+
+                        <!-- reset user password  -->
+                         <v-dialog v-model="reset_user_password_dialog" persistent max-width="500">
+                            <v-card prepend-icon="mdi-key-variant" title="Reset Password?" class="pa-2">
+                                <v-card-text>
+                                    <form @submit.prevent="reset_password(reset_password_form.client_id)">
+                                        <div class="flex justify-space-between">
+                                            <div>
+                                                <v-icon color="warning" icon="mdi-information" size="40"></v-icon>
+                                            </div>
+                                            <div class="ms-4">
+                                                Are you sure you want to reset the password of <span class="text-uppercase font-bold">{{ reset_password_form.client_name }}</span>?
+                                            </div>
+                                        </div>
+
+                                        <v-divider class="my-4"></v-divider>
+                                        <div class="text-end">
+                                            <v-btn
+                                                text="No, close"
+                                                variant="plain"
+                                                @click="reset_user_password_dialog = false"
+                                            ></v-btn>
+
+                                            <v-btn
+                                                color="warning"
+                                                text="Yes, reset"
+                                                variant="tonal"
+                                                type="submit"
+                                                :class="{ 'opacity-25': reset_password_form.processing }"
+                                                :disabled="reset_password_form.processing"
+                                            ></v-btn>
+                                        </div>
+                                    </form>
+                                </v-card-text>
+                            </v-card>
+                         </v-dialog>
+
+                         <!-- deactivate user account  -->
+                          <v-dialog v-model="change_account_status_dialog" persistent max-width="500">
+                            <v-card prepend-icon="mdi-archive-alert" :title="change_account_status_form.client_account_status == 'Deactivated' ? 'Reactivate Account?' : 'Deactivate Account?'" class="pa-2">
+                                <v-card-text>
+                                    <form @submit.prevent="change_account_status(change_account_status_form.client_id)">
+                                        <div class="flex justify-space-between">
+                                            <div>
+                                                <v-icon :color="change_account_status_form.client_account_status == 'Deactivated' ? 'info' : 'error'" icon="mdi-information" size="40"></v-icon>
+                                            </div>
+                                            <div class="ms-4">
+                                                Are you sure you want to <span v-if="change_account_status_form.client_account_status == 'Deactivated'">reactivate</span><span v-else>deactivate</span> this account: <span class="text-uppercase font-bold">{{ change_account_status_form.client_name }}</span>?
+                                            </div>
+                                        </div>
+
+                                        <div v-if="change_account_status_form.client_account_status == 'Deactivated'" class="mt-4">
+                                            <div class="flex items-center p-4 mb-4 text-sm text-blue-800 border border-blue-300 rounded-lg bg-blue-50" role="alert">
+                                                <svg class="shrink-0 inline w-4 h-4 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
+                                                </svg>
+                                                <span class="sr-only">Info</span>
+                                                <div>
+                                                    <span class="font-medium">NOTE:</span> Reactivating this account will <span class="font-medium">restore the user's access to the system</span>. They will be able to log in and perform actions as usual.
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div v-else class="mt-4">
+                                            <div class="flex items-center p-4 mb-4 text-sm text-red-800 border border-red-300 rounded-lg bg-red-50" role="alert">
+                                                <svg class="shrink-0 inline w-4 h-4 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
+                                                </svg>
+                                                <span class="sr-only">Info</span>
+                                                <div>
+                                                    <span class="font-medium">WARNING:</span> Deactivating this account will immediately <span class="font-medium">revoke the user's access to the system</span>. They will no longer be able to log in or perform any actions until reactivated.
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <v-divider class="my-4"></v-divider>
+                                        <div class="text-end">
+                                            <v-btn
+                                                text="No, close"
+                                                variant="plain"
+                                                @click="change_account_status_dialog = false"
+                                            ></v-btn>
+
+                                            <v-btn
+                                                :color="change_account_status_form.client_account_status == 'Deactivated' ? 'info' : 'error'"
+                                                :text="change_account_status_form.client_account_status == 'Deactivated' ? 'Yes, reactivate' : 'Yes, deactivate'"
+                                                variant="tonal"
+                                                type="submit"
+                                                :class="{ 'opacity-25': change_account_status_form.processing }"
+                                                :disabled="change_account_status_form.processing"
+                                            ></v-btn>
+                                        </div>
+                                    </form>
+                                </v-card-text>
+                            </v-card>
+                         </v-dialog>
+                     </div>
                 </div>
             </div>
         </div>
@@ -109,11 +803,24 @@ import { Head } from '@inertiajs/vue3';
     data () {
       return {
         search: '',
+        // add_user_dialog: false,
         header: [
+            {
+                title: '#',
+                align: 'start',
+                key: 'number',
+                sortable: false,
+            },
             {
                 title: 'User',
                 align: 'start',
-                key: 'name',
+                key: 'full_name',
+                sortable: true,
+            },
+            {
+                title: 'Sex',
+                align: 'start',
+                key: 'sex',
                 sortable: true,
             },
             {
@@ -129,32 +836,20 @@ import { Head } from '@inertiajs/vue3';
                 sortable: true,
             },
             {
-                title: 'Role',
-                align: 'start',
-                key: 'role',
-                sortable: true,
-            },
-            {
-                title: 'Permission',
-                align: 'start',
-                key: 'permission',
-                sortable: false,
-            },
-            {
                 title: 'Account Status',
                 align: 'start',
-                key: 'status',
+                key: 'account_status',
                 sortable: false,
             },
             {
-                title: 'Date Created',
+                title: 'Last Updated',
                 align: 'start',
-                key: 'status',
+                key: 'last_updated',
                 sortable: false,
             },
             {
                 title: 'Action',
-                align: 'start',
+                align: 'end',
                 key: 'actions',
                 sortable: false,
             },
@@ -163,29 +858,17 @@ import { Head } from '@inertiajs/vue3';
           {
             name: 'John Doe',
             image: '1.png',
+            sex: 'M',
             campus: 'Echague',
             designation: 'CBAO Director',
             role: 'Admin',
             permission: ['FULL_ACCESS'],
             status: true,
-          },
-          {
-            name: 'Galaxy RTX 3080',
-            image: '2.png',
-            campus: 'Ilagan',
-            designation: 'CBAO Director',
-            role: 'User',
-            permission: ['ENTER_PFT_GRADE', 'ENTER_IPME_GRADE', 'ENTER_FPME_GRADE'],
-            status: false,
-          },
-          {
-            name: 'Orion RX 6800 XT',
-            image: '3.png',
-            campus: 'San Mariano',
-            designation: 'Information Officer',
-            role: 'User',
-            permission: ['VALIDATE_DOCUMENT'],
-            status: true,
+            creation: {
+                date: '2025-07-24 at 05:23 am',
+                user: 'Cyra C.Cacho',
+                status: 'Created'
+            }
           },
         ],
 
@@ -201,5 +884,10 @@ import { Head } from '@inertiajs/vue3';
         ]
       }
     },
+    methods: {
+        addProduct(){
+            console.log(this.add_user_form);
+        }
+    }
   }
 </script>

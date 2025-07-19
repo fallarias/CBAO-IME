@@ -1,7 +1,7 @@
 <template>
     <div>
         <v-row dense>
-            <v-col cols="12" md="4" class="border-b-4 pb-4 rounded-full border-green-500">
+            <v-col cols="12" md="4">
                 <v-card color="green-darken-1" variant="flat" class="px-6 py-8">
                     <v-row class="justify-center">
                         <v-col>

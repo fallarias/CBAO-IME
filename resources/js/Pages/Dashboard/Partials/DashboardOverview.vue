@@ -7,22 +7,22 @@ import { Link } from '@inertiajs/vue3';
 <template>
     <v-row dense>
         <v-col cols="12" md="3">
-            <Link href="#">
+            <Link :href="route('income.display')">
                 <OverviewCard :data="overview_data[0]"></OverviewCard>
             </Link>
         </v-col>
         <v-col cols="12" md="3">
-            <Link href="#">
+            <Link :href="route('expenses.display')">
                 <OverviewCard :data="overview_data[1]"></OverviewCard>
             </Link>
         </v-col>
         <v-col cols="12" md="3">
-            <Link href="#">
+            <Link :href="route('enterprises.display')">
                 <OverviewCard :data="overview_data[2]"></OverviewCard>
             </Link>
         </v-col>
         <v-col cols="12" md="3">
-            <Link href="#">
+            <Link :href="route('inventory.display')">
                 <OverviewCard :data="overview_data[3]"></OverviewCard>
             </Link>
         </v-col>

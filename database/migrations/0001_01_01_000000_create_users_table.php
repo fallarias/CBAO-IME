@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('avatar')->default("default_avatar.jpg");
             $table->string('name');
+            $table->enum("sex", ["Male","Female"]);
             $table->string('designation');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
@@ -22,6 +23,14 @@ return new class extends Migration
             $table->bigInteger('campus_id')->unsigned()->nullable();
             $table->foreign('campus_id')->references('id')->on('campuses');
             $table->enum("role", ["Admin","User"])->default("User");
+            $table->boolean('reports')->default(false);
+            $table->boolean('enterprises')->default(false);
+            $table->boolean('inventory')->default(false);
+            $table->boolean('income')->default(false);
+            $table->boolean('expenses')->default(false);
+            $table->dateTime('last_modified_at')->nullable();
+            $table->bigInteger('user_id')->unsigned()->nullable();
+            $table->foreign('user_id')->references('id')->on('users');
             $table->rememberToken();
             $table->timestamps();
         });

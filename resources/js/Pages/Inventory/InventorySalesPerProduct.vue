@@ -56,7 +56,7 @@ import { Head } from '@inertiajs/vue3';
                                     text="Add Sales"
                                     variant="flat"
                                     color="green-darken-4"
-                                    @click="add"
+                                    @click="add_sales_dialog = true"
                                 ></v-btn>
                             </v-card-title>
 
@@ -75,13 +75,6 @@ import { Head } from '@inertiajs/vue3';
                                     <div class="text-start">{{ item.number }}</div>
                                 </template>
 
-                                <template v-slot:item.quantity="{item}">
-                                    <div>
-                                        {{ item.quantity }}
-                                        <v-chip label v-if="item.quantity <= 10" color="orange-darken-4" size="small" class="ms-2">Low stock!</v-chip>
-                                    </div>
-                                </template>
-
                                 <template v-slot:item.actions="{ item }">
                                     <div class="text-end">
                                         <v-btn variant="flat" color="warning" class="mr-2 text-none" prepend-icon="mdi-pencil">Edit</v-btn>
@@ -92,6 +85,64 @@ import { Head } from '@inertiajs/vue3';
                                 </template>
                             </v-data-table>
                         </v-card>
+                    </div>
+
+                    <!-- dialogs here  -->
+                    <div>
+                        <!-- add sales  -->
+                         <v-dialog v-model="add_sales_dialog" persistent max-width="800">
+                            <v-card prepend-icon="mdi-package" title="Add Sales" class="pa-2">
+                                <v-card-text>
+
+                                    <v-row>
+                                        <v-col>Product: ID Lace</v-col>
+                                    </v-row>
+                                    <v-row>
+                                        <v-col>
+                                            <v-number-input
+                                                :reverse="false"
+                                                controlVariant="default"
+                                                label="Quantity"
+                                                :hideInput="false"
+                                                :inset="false"
+                                                variant="outlined"
+                                                v-model="add_product_sales.quantity"
+                                            ></v-number-input>
+                                        </v-col>
+                                        <v-col>
+                                            <v-number-input
+                                                v-model="add_product_sales.total_sales"
+                                                :reverse="false"
+                                                controlVariant="default"
+                                                label="Sales"
+                                                :hideInput="false"
+                                                :inset="false"
+                                                variant="outlined"
+                                                :precision="2"
+                                                @click="compute_sales"
+                                                readonly
+                                            ></v-number-input>
+                                        </v-col>
+                                    </v-row>
+                                </v-card-text>
+                                <v-divider></v-divider>
+                                <v-card-actions>
+                                    <v-spacer></v-spacer>
+                                    <v-btn
+                                        text="Cancel"
+                                        variant="plain"
+                                        @click="add_sales_dialog = false"
+                                    ></v-btn>
+
+                                    <v-btn
+                                        color="primary"
+                                        text="Save"
+                                        variant="tonal"
+                                        @click="add_sales"
+                                    ></v-btn>
+                                </v-card-actions>
+                            </v-card>
+                         </v-dialog>
                     </div>
                 </div>
                 
@@ -112,6 +163,12 @@ import { Head } from '@inertiajs/vue3';
     data () {
       return {
         search: '',
+        add_sales_dialog: false,
+        add_product_sales: {
+            price: 100,
+            quantity: null,
+            total_sales: null
+        },
         header: [
             {
                 title: '#',
@@ -177,5 +234,10 @@ import { Head } from '@inertiajs/vue3';
         ]
       }
     },
+    methods: {
+        compute_sales(){
+            this.add_product_sales.total_sales = this.add_product_sales.quantity * this.add_product_sales.price;
+        }
+    }
   }
 </script>

@@ -23,11 +23,11 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Product Inventory" />
+    <Head title="Expenses" />
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">Product Inventory</h2>
+            <h2 class="text-xl font-semibold leading-tight text-gray-800">Expenses</h2>
         </template>
 
         <div>
@@ -40,8 +40,8 @@ const submit = () => {
                     <div class="p-6 text-gray-900">
                         <v-card flat>
                             <v-card-title class="d-flex align-center pe-2">
-                                <v-icon icon="mdi-package"></v-icon> &nbsp;
-                                Product Inventory
+                                <v-icon icon="mdi-cash-remove"></v-icon> &nbsp;
+                                Expenses
 
                                 
 
@@ -111,7 +111,7 @@ const submit = () => {
                                             class="ms-2 text-none tracking-normal"
                                             prepend-icon="mdi-plus"
                                             rounded="l"
-                                            text="Add Product"
+                                            text="Add New"
                                             variant="flat"
                                             color="green-darken-4"
                                             @click="dialog = true"
@@ -126,7 +126,7 @@ const submit = () => {
                             <v-data-table
                                 v-model:search="search"
                                 :filter-keys="['name']" :headers="header"
-                                :items="products" hover :loading="loading"
+                                :items="products" hover :loading="loading" fixed-header
                             >
                                 <template v-slot:loading>
                                     <v-skeleton-loader type="table-row@5"></v-skeleton-loader>
@@ -135,47 +135,110 @@ const submit = () => {
                                 <template v-slot:item.number="{item}">
                                     <div class="text-start">{{ item.number }}</div>
                                 </template>
-                                
-                                <template v-slot:item.image="{ item }">
-                                    <div class="my-2">
-                                        <v-img
-                                            :src="`/storage/uploads/products/${item.image}`"
-                                            height="100" width="100"
-                                            cover
-                                        ></v-img>
-                                    </div>
+
+                                <template v-slot:item.creditor="{item}">
+                                    <td style="width: fit-content; white-space: nowrap;">
+                                        {{ item.creditor }}
+                                    </td>
                                 </template>
 
-                                <template v-slot:item.quantity="{item}">
+                                <template v-slot:item.reference_date="{item}">
+                                    <td style="width: fit-content; white-space: nowrap;">
+                                        {{ item.reference_date }}
+                                    </td>
+                                </template>
+
+                                <template v-slot:item.serial_number="{item}">
+                                    <td style="width: fit-content; white-space: nowrap;">
+                                        {{ item.serial_number }}
+                                    </td>
+                                </template>
+
+                                <!-- <template v-slot:item.uacs="{item}">
+                                    <td style="width: fit-content; white-space: nowrap;">
+                                        {{ item.uacs }}
+                                    </td>
+                                </template> -->
+
+                                <template v-slot:item.uacs="{item}">
+                                    <td style="width: fit-content; white-space: nowrap;">
+                                        <v-btn variant="tonal" color="info" class="mr-2 text-none" @click="view_uacs(item)">View</v-btn>
+                                    </td>
+
+                                    
+                                </template>
+
+                                <template v-slot:item.particulars_date="{item}">
+                                    <td style="width: fit-content; white-space: nowrap;">
+                                        {{ item.particulars_date }}
+                                    </td>
+                                </template>
+
+                                <template v-slot:item.check_number="{item}">
+                                    <td style="width: fit-content; white-space: nowrap;">
+                                        {{ item.check_number }}
+                                    </td>
+                                </template>
+
+                                <template v-slot:item.creditors="{item}">
                                     <div>
-                                        {{ item.quantity }}
-                                        <v-chip label v-if="item.quantity <= 10" color="orange-darken-4" size="small" class="ms-2">Low stock!</v-chip>
-                                    </div>
-                                </template>
-
-                                <template v-slot:item.product_status="{item}">
-                                    <v-chip size="small" class="ma-2" :color="item.product_status == 'Available' ? 'green-darken-3' : 'red-darken-4'" label>{{ item.product_status }}</v-chip>
-                                </template>
-
-                                <template v-slot:item.sales="{item}">
-                                    <div>
-                                        <Link :href="route('inventory.view', 1)" class="text-blue-darken-3 hover:font-bold hover:underline">View Sales</Link>
+                                        <Link :href="route('inventory.view', 1)" class="text-blue-darken-3 hover:font-bold hover:underline">View List</Link>
                                     </div>
                                 </template>
 
                                 <template v-slot:item.actions="{ item }">
-                                    <div class="text-end">
-                                        <v-btn variant="flat" color="warning" class="mr-2 text-none" prepend-icon="mdi-pencil">Edit</v-btn>
-                                        <v-btn variant="flat" color="error" class="mr-2 text-none" prepend-icon="mdi-delete" @click="deleteProduct">Delete</v-btn>
+                                    <td style="width: fit-content; white-space: nowrap;" class="text-end">
+                                        <v-btn variant="flat" color="info" class="mr-2 text-none" prepend-icon="mdi-eye">View</v-btn>
+                                        <v-btn variant="flat" color="error" class="mr-2 text-none" prepend-icon="mdi-delete" @click="deleteProduct">Remove</v-btn>
                                         <!-- <v-btn variant="tonal" color="warning" class="mr-2"  icon="mdi-pencil" size="x-small"></v-btn>
                                         <v-btn variant="tonal" color="error"  icon="mdi-delete" size="x-small"></v-btn> -->
-                                    </div>
+                                    </td>
                                 </template>
                             </v-data-table>
                         </v-card>
                     </div>
 
                     <div>
+                        <v-dialog
+                        v-model="uacs_dialog"
+                        width="auto"
+                        >
+                            <v-card
+                                max-width="900"
+                                :title="uacs_dialog_data.creditor"
+                            >
+                                <v-card-text>
+                                    <table class="min-w-full bg-white rounded-lg overflow-hidden">
+                                        <thead class="bg-emerald-800 text-white text-sm uppercase tracking-wide">
+                                            <tr>
+                                                <th class="px-6 py-4 text-left">#</th>
+                                                <th class="px-6 py-4 text-left">UACS Code</th>
+                                                <th class="px-6 py-4 text-left">UACS Description</th>
+                                                <th class="px-6 py-4 text-left">Type</th>
+                                                <th class="px-6 py-4 text-left">Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="text-gray-700 text-sm divide-y divide-gray-200">
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="px-6 py-4">1</td>
+                                                <td class="px-6 py-4">{{uacs_dialog_data.uacs}}</td>
+                                                <td class="px-6 py-4">{{ uacs_dialog_data.particulars }}</td>
+                                                <td class="px-6 py-4">MOOE</td>
+                                                <td class="px-6 py-4">₱{{ uacs_dialog_data.total_mooe }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </v-card-text>
+                                <template v-slot:actions>
+                                <v-btn
+                                    class="ms-auto"
+                                    text="Ok"
+                                    @click="uacs_dialog = false"
+                                ></v-btn>
+                                </template>
+                            </v-card>
+                        </v-dialog>
+
                         <v-dialog v-model="dialog" persistent max-width="800">
                             <v-card prepend-icon="mdi-package" title="Add Product" class="pa-2">
                                 <v-card-text>
@@ -227,7 +290,7 @@ const submit = () => {
                                                 <v-select
                                                     clearable
                                                     label="Product category"
-                                                    :items="['Category 1', 'Category 2']"
+                                                    :items="['California', 'Colorado', 'Florida', 'Georgia', 'Texas', 'Wyoming']"
                                                     multiple
                                                     variant="outlined"
                                                 ></v-select>
@@ -306,6 +369,8 @@ import Swal from 'sweetalert2';
       return {
         search: '',
         dialog: false,
+        uacs_dialog: false,
+        uacs_dialog_data: null,
         previewUrl: null,
         previewImageDialog: false,
         header: [
@@ -316,46 +381,88 @@ import Swal from 'sweetalert2';
                 sortable: false,
             },
             {
-                title: 'Image',
+                title: 'Creditor',
                 align: 'start',
-                key: 'image',
+                key: 'creditor',
                 sortable: true,
             },
             {
-                title: 'Product',
-                align: 'start',
-                key: 'product',
-                sortable: true,
-            },
-            {
-                title: 'Quantity',
+                title: 'Reference',
                 align: 'center',
-                key: 'quantity',
-                sortable: true,
+                children: [
+                    {
+                        title: 'Date',
+                        value: 'reference_date',
+                        align: 'center'
+                    },
+                    {
+                        title: 'Serial No.',
+                        value: 'serial_number',
+                        align: 'center'
+                    },
+                ]
             },
             {
-                title: 'Price',
+                title: 'UACS Object Code',
                 align: 'center',
-                key: 'price',
+                key: 'uacs',
                 sortable: true,
             },
             {
-                title: 'Status',
+                title: 'Utilization',
                 align: 'center',
-                key: 'product_status',
+                key: 'utilization',
                 sortable: true,
             },
             {
-                title: 'Last Modified',
-                align: 'start',
-                key: 'last_modified',
+                title: 'Utilized BA',
+                align: 'center',
+                key: 'utilized_ba',
                 sortable: true,
             },
             {
-                title: 'Sales',
-                align: 'start',
-                key: 'sales',
-                sortable: false,
+                title: 'Disbursements',
+                align: 'center',
+                key: 'disbursements',
+                sortable: true,
+            },
+            {
+                title: 'Prticulars',
+                align: 'center',
+                children: [
+                    {
+                        title: 'Check No.',
+                        value: 'check_number',
+                        align: 'center'
+                    },
+                    {
+                        title: 'Date',
+                        value: 'particulars_date',
+                        align: 'center'
+                    },
+                    {
+                        title: 'Particulars',
+                        value: 'particulars'
+                    },
+                ]
+            },
+            {
+                title: 'Total MOOE',
+                align: 'center',
+                key: 'total_mooe',
+                sortable: true,
+            },
+            {
+                title: 'Total CO',
+                align: 'center',
+                key: 'total_co',
+                sortable: true,
+            },
+            {
+                title: 'Overall Total',
+                align: 'center',
+                key: 'overall_total',
+                sortable: true,
             },
             {
                 title: 'Actions',
@@ -368,32 +475,88 @@ import Swal from 'sweetalert2';
           {
             number: 1,
             id: 1,
-            image: 'product_placeholder.jpg',
-            product: 'ID Lace',
-            quantity: 500,
-            price: 100,
-            product_status: 'Available',
-            last_modified: '2025-06-13 8:24 PM'
+            creditor: 'REYMARK GALLETES',
+            reference_date: '01-01-2025',
+            serial_number: '02-206441-2025-01-003',
+            uacs: '50203090 00',
+            utilization: '10,000',
+            utilized_ba: '1,903,672.00',
+            disbursements: 'No data',
+            check_number: 'No data',
+            particulars_date: 'No data',
+            particulars: 'C/a Fuel expenses for rice field land preparation',
+            total_mooe: '10,000.00',
+            total_co: '0.00',
+            overall_total: '10,000.00',
           },
           {
             number: 2,
             id: 2,
-            image: 'product_placeholder.jpg',
-            product: 'PE Uniform',
-            quantity: 10,
-            price: 350,
-            product_status: 'Not Available',
-            last_modified: '2025-06-13 8:24 PM'
+            creditor: 'DELILAH ZIPAGANG',
+            reference_date: '02-04-2025',
+            serial_number: '02-206441-2025-02-012',
+            uacs: '50216010 00',
+            utilization: '10,000',
+            utilized_ba: '1,903,672.00',
+            disbursements: 'No data',
+            check_number: 'No data',
+            particulars_date: 'No data',
+            particulars: 'payment of labor(pulling,transpalnting & hauling of seedlings)',
+            total_mooe: '46,800.00',
+            total_co: '0.00',
+            overall_total: '46,800.00',
           },
         ],
-
+        uacs_dialog_table: [
+            {
+                title: '#',
+                align: 'start',
+                key: 'number',
+                sortable: false,
+            },
+            {
+                title: 'UACS Code',
+                align: 'center',
+                key: 'uacs_code',
+                sortable: false,
+            },
+            {
+                title: 'UACS Description',
+                align: 'starts',
+                key: 'uacs_description',
+                sortable: false,
+            },
+            {
+                title: 'Type',
+                align: 'center',
+                key: 'type',
+                sortable: false,
+            },
+            {
+                title: 'Amount',
+                align: 'center',
+                key: 'amount',
+                sortable: false,
+            },
+        ],
+        // uacs_dialog_table_data: [
+        //     {
+        //         number: 1,
+        //         uacs_code: '50203090 00',
+        //         uacs_description: 
+        //     }
+        // ],
         breadcrumbs_items: [
             {
                 title: 'Transaction',
                 active: false
             },
             {
-                title: 'Inventory',
+                title: 'Expenses',
+                active: false
+            },
+            {
+                title: 'Creditors',
                 active: true
             },
         ]
@@ -451,6 +614,10 @@ import Swal from 'sweetalert2';
                     });
                 }
             });
+        },
+        view_uacs(data){
+            this.uacs_dialog_data = data;
+            this.uacs_dialog = true;
         }
     }
   }

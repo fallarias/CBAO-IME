@@ -23,11 +23,11 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Product Inventory" />
+    <Head title="Income" />
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">Product Inventory</h2>
+            <h2 class="text-xl font-semibold leading-tight text-gray-800">Income</h2>
         </template>
 
         <div>
@@ -40,8 +40,8 @@ const submit = () => {
                     <div class="p-6 text-gray-900">
                         <v-card flat>
                             <v-card-title class="d-flex align-center pe-2">
-                                <v-icon icon="mdi-package"></v-icon> &nbsp;
-                                Product Inventory
+                                <v-icon icon="mdi-cash-remove"></v-icon> &nbsp;
+                                Income
 
                                 
 
@@ -111,7 +111,7 @@ const submit = () => {
                                             class="ms-2 text-none tracking-normal"
                                             prepend-icon="mdi-plus"
                                             rounded="l"
-                                            text="Add Product"
+                                            text="Add New"
                                             variant="flat"
                                             color="green-darken-4"
                                             @click="dialog = true"
@@ -135,41 +135,20 @@ const submit = () => {
                                 <template v-slot:item.number="{item}">
                                     <div class="text-start">{{ item.number }}</div>
                                 </template>
-                                
-                                <template v-slot:item.image="{ item }">
-                                    <div class="my-2">
-                                        <v-img
-                                            :src="`/storage/uploads/products/${item.image}`"
-                                            height="100" width="100"
-                                            cover
-                                        ></v-img>
-                                    </div>
-                                </template>
 
-                                <template v-slot:item.quantity="{item}">
-                                    <div>
-                                        {{ item.quantity }}
-                                        <v-chip label v-if="item.quantity <= 10" color="orange-darken-4" size="small" class="ms-2">Low stock!</v-chip>
-                                    </div>
-                                </template>
-
-                                <template v-slot:item.product_status="{item}">
-                                    <v-chip size="small" class="ma-2" :color="item.product_status == 'Available' ? 'green-darken-3' : 'red-darken-4'" label>{{ item.product_status }}</v-chip>
-                                </template>
-
-                                <template v-slot:item.sales="{item}">
-                                    <div>
-                                        <Link :href="route('inventory.view', 1)" class="text-blue-darken-3 hover:font-bold hover:underline">View Sales</Link>
-                                    </div>
+                                <template v-slot:item.enterprise="{item}">
+                                    <td style="width: fit-content; white-space: nowrap;">
+                                        {{ item.enterprise }}
+                                    </td>
                                 </template>
 
                                 <template v-slot:item.actions="{ item }">
-                                    <div class="text-end">
-                                        <v-btn variant="flat" color="warning" class="mr-2 text-none" prepend-icon="mdi-pencil">Edit</v-btn>
-                                        <v-btn variant="flat" color="error" class="mr-2 text-none" prepend-icon="mdi-delete" @click="deleteProduct">Delete</v-btn>
+                                    <td style="width: fit-content; white-space: nowrap;" class="text-end">
+                                        <v-btn variant="flat" color="info" class="mr-2 text-none" prepend-icon="mdi-eye">View</v-btn>
+                                        <v-btn variant="flat" color="error" class="mr-2 text-none" prepend-icon="mdi-delete" @click="deleteProduct">Remove</v-btn>
                                         <!-- <v-btn variant="tonal" color="warning" class="mr-2"  icon="mdi-pencil" size="x-small"></v-btn>
                                         <v-btn variant="tonal" color="error"  icon="mdi-delete" size="x-small"></v-btn> -->
-                                    </div>
+                                    </td>
                                 </template>
                             </v-data-table>
                         </v-card>
@@ -227,7 +206,7 @@ const submit = () => {
                                                 <v-select
                                                     clearable
                                                     label="Product category"
-                                                    :items="['Category 1', 'Category 2']"
+                                                    :items="['California', 'Colorado', 'Florida', 'Georgia', 'Texas', 'Wyoming']"
                                                     multiple
                                                     variant="outlined"
                                                 ></v-select>
@@ -316,46 +295,94 @@ import Swal from 'sweetalert2';
                 sortable: false,
             },
             {
-                title: 'Image',
+                title: 'Enterprise',
                 align: 'start',
-                key: 'image',
+                key: 'enterprise',
                 sortable: true,
             },
             {
-                title: 'Product',
-                align: 'start',
-                key: 'product',
-                sortable: true,
-            },
-            {
-                title: 'Quantity',
+                title: new Date().getFullYear() + ' Current',
                 align: 'center',
-                key: 'quantity',
+                key: 'current',
                 sortable: true,
             },
             {
-                title: 'Price',
+                title: 'January',
                 align: 'center',
-                key: 'price',
+                key: 'january',
                 sortable: true,
             },
             {
-                title: 'Status',
+                title: 'February',
                 align: 'center',
-                key: 'product_status',
+                key: 'february',
                 sortable: true,
             },
             {
-                title: 'Last Modified',
-                align: 'start',
-                key: 'last_modified',
+                title: 'March',
+                align: 'center',
+                key: 'march',
                 sortable: true,
             },
             {
-                title: 'Sales',
-                align: 'start',
-                key: 'sales',
-                sortable: false,
+                title: 'April',
+                align: 'center',
+                key: 'april',
+                sortable: true,
+            },
+            {
+                title: 'May',
+                align: 'center',
+                key: 'may',
+                sortable: true,
+            },
+            {
+                title: 'June',
+                align: 'center',
+                key: 'june',
+                sortable: true,
+            },
+            {
+                title: 'July',
+                align: 'center',
+                key: 'july',
+                sortable: true,
+            },
+            {
+                title: 'August',
+                align: 'center',
+                key: 'august',
+                sortable: true,
+            },
+            {
+                title: 'September',
+                align: 'center',
+                key: 'september',
+                sortable: true,
+            },
+            {
+                title: 'October',
+                align: 'center',
+                key: 'october',
+                sortable: true,
+            },
+            {
+                title: 'November',
+                align: 'center',
+                key: 'november',
+                sortable: true,
+            },
+            {
+                title: 'December',
+                align: 'center',
+                key: 'december',
+                sortable: true,
+            },
+            {
+                title: 'Total',
+                align: 'center',
+                key: 'overall_total',
+                sortable: true,
             },
             {
                 title: 'Actions',
@@ -368,22 +395,40 @@ import Swal from 'sweetalert2';
           {
             number: 1,
             id: 1,
-            image: 'product_placeholder.jpg',
-            product: 'ID Lace',
-            quantity: 500,
-            price: 100,
-            product_status: 'Available',
-            last_modified: '2025-06-13 8:24 PM'
+            enterprise: 'Scheme Rental (Rice)',
+            current: '0.00',
+            january: '0.00',
+            february: '0.00',
+            march: '0.00',
+            april: '0.00',
+            may: '0.00',
+            june: '0.00',
+            july: '0.00',
+            august: '0.00',
+            september: '0.00',
+            october: '0.00',
+            november: '0.00',
+            december: '0.00',
+            overall_total: '0.00',
           },
           {
             number: 2,
             id: 2,
-            image: 'product_placeholder.jpg',
-            product: 'PE Uniform',
-            quantity: 10,
-            price: 350,
-            product_status: 'Not Available',
-            last_modified: '2025-06-13 8:24 PM'
+            enterprise: 'Rice Project',
+            current: '0.00',
+            january: '0.00',
+            february: '0.00',
+            march: '0.00',
+            april: '0.00',
+            may: '0.00',
+            june: '0.00',
+            july: '0.00',
+            august: '0.00',
+            september: '0.00',
+            october: '0.00',
+            november: '0.00',
+            december: '0.00',
+            overall_total: '0.00',
           },
         ],
 
@@ -393,7 +438,7 @@ import Swal from 'sweetalert2';
                 active: false
             },
             {
-                title: 'Inventory',
+                title: 'Expenses',
                 active: true
             },
         ]

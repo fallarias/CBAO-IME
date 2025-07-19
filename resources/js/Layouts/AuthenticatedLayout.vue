@@ -3,8 +3,15 @@ import { ref } from 'vue';
 import NavLink from '@/Components/NavLink.vue';
 import ProfileMenu from '@/Partials/ProfileMenu.vue';
 import NotificationBar from '@/Partials/NotificationBar.vue';
+import FlashMessage from '@/Components/FlashMessage.vue';
+import { usePage } from '@inertiajs/vue3';
   
 const drawer = ref(null)
+
+const user_name = {
+  last_name: usePage().props.auth.user.last_name,
+  first_name: usePage().props.auth.user.first_name,
+}
 </script>
 
 <template>
@@ -21,7 +28,7 @@ const drawer = ref(null)
 
             <div class="mr-5">
                 <NotificationBar />
-                <ProfileMenu :name="$page.props.auth.user.name" :email_address="$page.props.auth.user.email"/>
+                <ProfileMenu :name="user_name" :email_address="$page.props.auth.user.email"/>
             </div>
         </v-app-bar>
         <v-navigation-drawer v-model="drawer">
@@ -29,8 +36,12 @@ const drawer = ref(null)
               <NavLink :href="route('dashboard')" :active="route().current('dashboard')" :icon="`mdi-view-dashboard`">
                   <v-list-item-title class="navigation" role="link">Dashboard</v-list-item-title>
               </NavLink>
+
+              <NavLink :icon="`mdi-account`">
+                  <v-list-item-title class="navigation" role="link">Profile</v-list-item-title>
+              </NavLink>
   
-            <v-list-group value="Setup">
+            <v-list-group value="Setup" v-if="$page.props.auth.user.role == 'Admin'">
               <template v-slot:activator="{ props }">
                   <v-list-item v-bind="props" prepend-icon="mdi-cog" title="Setup"></v-list-item>
               </template>
@@ -40,6 +51,9 @@ const drawer = ref(null)
               </NavLink>
               <NavLink :href="route('campuses.display')" :active="route().current('campuses.display')" :icon="`mdi-school`">
                   <v-list-item-title class="navigation" role="link">Campuses</v-list-item-title>
+              </NavLink>
+              <NavLink :href="route('categories.display')" :active="route().current('categories.display')" :icon="`mdi-label-multiple`">
+                  <v-list-item-title class="navigation" role="link">Categories</v-list-item-title>
               </NavLink>
               
             </v-list-group>
@@ -55,10 +69,29 @@ const drawer = ref(null)
               <NavLink :href="route('inventory.display')" :active="route().current('inventory.display') || route().current('inventory.view')" :icon="`mdi-package`">
                   <v-list-item-title class="navigation" role="link">Inventory</v-list-item-title>
               </NavLink>
-              <NavLink :icon="`mdi-cash-check`">
+              <NavLink :href="route('income.display')" :active="route().current('income.display') || route().current('income.view')" :icon="`mdi-cash-check`">
                   <v-list-item-title class="navigation" role="link">Income</v-list-item-title>
               </NavLink>
-              <NavLink :icon="`mdi-cash-remove`">
+              <NavLink :href="route('expenses.display')" :active="route().current('expenses.display') || route().current('expenses.view')" :icon="`mdi-cash-remove`">
+                  <v-list-item-title class="navigation" role="link">Expenses</v-list-item-title>
+              </NavLink>
+              <NavLink :icon="`mdi-trending-up`">
+                  <v-list-item-title class="navigation" role="link">Evaluation</v-list-item-title>
+              </NavLink>
+            </v-list-group>
+
+            <v-list-group value="Reports">
+              <template v-slot:activator="{ props }">
+                  <v-list-item v-bind="props" prepend-icon="mdi-file-chart" title="Reports"></v-list-item>
+              </template>
+  
+              <NavLink :href="route('inventory.display')" :active="route().current('inventory.display') || route().current('inventory.view')" :icon="`mdi-package`">
+                  <v-list-item-title class="navigation" role="link">Inventory</v-list-item-title>
+              </NavLink>
+              <NavLink :href="route('income.display')" :active="route().current('income.display') || route().current('income.view')" :icon="`mdi-cash-check`">
+                  <v-list-item-title class="navigation" role="link">Income</v-list-item-title>
+              </NavLink>
+              <NavLink :href="route('expenses.display')" :active="route().current('expenses.display') || route().current('expenses.view')" :icon="`mdi-cash-remove`">
                   <v-list-item-title class="navigation" role="link">Expenses</v-list-item-title>
               </NavLink>
               <NavLink :icon="`mdi-trending-up`">

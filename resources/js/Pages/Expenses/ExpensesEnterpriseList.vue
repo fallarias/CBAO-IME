@@ -23,11 +23,11 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Product Inventory" />
+    <Head title="Expenses" />
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">Product Inventory</h2>
+            <h2 class="text-xl font-semibold leading-tight text-gray-800">Expenses</h2>
         </template>
 
         <div>
@@ -40,8 +40,8 @@ const submit = () => {
                     <div class="p-6 text-gray-900">
                         <v-card flat>
                             <v-card-title class="d-flex align-center pe-2">
-                                <v-icon icon="mdi-package"></v-icon> &nbsp;
-                                Product Inventory
+                                <v-icon icon="mdi-cash-remove"></v-icon> &nbsp;
+                                Expenses
 
                                 
 
@@ -111,7 +111,7 @@ const submit = () => {
                                             class="ms-2 text-none tracking-normal"
                                             prepend-icon="mdi-plus"
                                             rounded="l"
-                                            text="Add Product"
+                                            text="Add New"
                                             variant="flat"
                                             color="green-darken-4"
                                             @click="dialog = true"
@@ -135,47 +135,36 @@ const submit = () => {
                                 <template v-slot:item.number="{item}">
                                     <div class="text-start">{{ item.number }}</div>
                                 </template>
-                                
-                                <template v-slot:item.image="{ item }">
-                                    <div class="my-2">
-                                        <v-img
-                                            :src="`/storage/uploads/products/${item.image}`"
-                                            height="100" width="100"
-                                            cover
-                                        ></v-img>
+
+                                <template v-slot:item.budget="{item}">
+                                    <div v-if="item.budget == ''">
+                                        <v-btn variant="flat" color="warning" class="mr-2 text-none" prepend-icon="mdi-exclamation-thick" @click="set_budget_dialog = true">Set Budget</v-btn>
+                                    </div>
+                                    <div v-else>
+                                        {{ item.budget }}
                                     </div>
                                 </template>
 
-                                <template v-slot:item.quantity="{item}">
+                                <template v-slot:item.creditors="{item}">
                                     <div>
-                                        {{ item.quantity }}
-                                        <v-chip label v-if="item.quantity <= 10" color="orange-darken-4" size="small" class="ms-2">Low stock!</v-chip>
-                                    </div>
-                                </template>
-
-                                <template v-slot:item.product_status="{item}">
-                                    <v-chip size="small" class="ma-2" :color="item.product_status == 'Available' ? 'green-darken-3' : 'red-darken-4'" label>{{ item.product_status }}</v-chip>
-                                </template>
-
-                                <template v-slot:item.sales="{item}">
-                                    <div>
-                                        <Link :href="route('inventory.view', 1)" class="text-blue-darken-3 hover:font-bold hover:underline">View Sales</Link>
+                                        <Link :href="route('expenses.view', 1)" class="text-blue-darken-3 hover:font-bold hover:underline">View List</Link>
                                     </div>
                                 </template>
 
                                 <template v-slot:item.actions="{ item }">
-                                    <div class="text-end">
-                                        <v-btn variant="flat" color="warning" class="mr-2 text-none" prepend-icon="mdi-pencil">Edit</v-btn>
-                                        <v-btn variant="flat" color="error" class="mr-2 text-none" prepend-icon="mdi-delete" @click="deleteProduct">Delete</v-btn>
+                                    <td style="width: fit-content; white-space: nowrap;" class="text-end">
+                                        <v-btn variant="flat" color="info" class="mr-2 text-none" prepend-icon="mdi-eye">View</v-btn>
+                                        <v-btn variant="flat" color="error" class="mr-2 text-none" prepend-icon="mdi-delete" @click="deleteProduct">Remove</v-btn>
                                         <!-- <v-btn variant="tonal" color="warning" class="mr-2"  icon="mdi-pencil" size="x-small"></v-btn>
                                         <v-btn variant="tonal" color="error"  icon="mdi-delete" size="x-small"></v-btn> -->
-                                    </div>
+                                    </td>
                                 </template>
                             </v-data-table>
                         </v-card>
                     </div>
 
                     <div>
+                        <!-- add new expense  -->
                         <v-dialog v-model="dialog" persistent max-width="800">
                             <v-card prepend-icon="mdi-package" title="Add Product" class="pa-2">
                                 <v-card-text>
@@ -227,7 +216,7 @@ const submit = () => {
                                                 <v-select
                                                     clearable
                                                     label="Product category"
-                                                    :items="['Category 1', 'Category 2']"
+                                                    :items="['California', 'Colorado', 'Florida', 'Georgia', 'Texas', 'Wyoming']"
                                                     multiple
                                                     variant="outlined"
                                                 ></v-select>
@@ -284,6 +273,48 @@ const submit = () => {
                                 </v-card-actions>
                             </v-card>
                         </v-dialog>
+
+                        <!-- set budget  -->
+                         <v-dialog v-model="set_budget_dialog" persistent max-width="600">
+                            <v-card prepend-icon="mdi-cash" title="Set Budget" class="pa-2">
+                                <v-card-text>
+                                    <v-row>
+                                        <v-col>
+                                            <div>Set Budget for <span class="text-green-500 font-bold">2025 Scheme Rental (Rice)</span></div>
+                                        </v-col>
+                                    </v-row>
+                                    <v-row>
+                                        <v-col>
+                                            <v-number-input
+                                                :reverse="false"
+                                                controlVariant="default"
+                                                label="Budget"
+                                                :hideInput="false"
+                                                :inset="false" 
+                                                variant="outlined"
+                                                precision="2"
+                                            ></v-number-input>
+                                        </v-col>
+                                    </v-row>
+                                </v-card-text>
+                                <v-divider></v-divider>
+                                <v-card-actions>
+                                    <v-spacer></v-spacer>
+                                    <v-btn
+                                        text="Close"
+                                        variant="plain"
+                                        @click="set_budget_dialog = false"
+                                    ></v-btn>
+
+                                    <v-btn
+                                        color="primary"
+                                        text="Save"
+                                        variant="tonal"
+                                        @click="addProduct"
+                                    ></v-btn>
+                                </v-card-actions>
+                            </v-card>
+                         </v-dialog>
                     </div>
                 </div>
                 
@@ -306,6 +337,7 @@ import Swal from 'sweetalert2';
       return {
         search: '',
         dialog: false,
+        set_budget_dialog: false,
         previewUrl: null,
         previewImageDialog: false,
         header: [
@@ -316,46 +348,40 @@ import Swal from 'sweetalert2';
                 sortable: false,
             },
             {
-                title: 'Image',
+                title: 'Enterprise',
                 align: 'start',
-                key: 'image',
+                key: 'enterprise',
                 sortable: true,
             },
             {
-                title: 'Product',
-                align: 'start',
-                key: 'product',
-                sortable: true,
-            },
-            {
-                title: 'Quantity',
+                title: 'Budgeted Amount',
                 align: 'center',
-                key: 'quantity',
+                key: 'budget',
                 sortable: true,
             },
             {
-                title: 'Price',
+                title: 'Total MOOE',
                 align: 'center',
-                key: 'price',
+                key: 'total_mooe',
                 sortable: true,
             },
             {
-                title: 'Status',
+                title: 'Total CO',
                 align: 'center',
-                key: 'product_status',
+                key: 'total_co',
                 sortable: true,
             },
             {
-                title: 'Last Modified',
-                align: 'start',
-                key: 'last_modified',
+                title: 'Overall Total',
+                align: 'center',
+                key: 'overall_total',
                 sortable: true,
             },
             {
-                title: 'Sales',
-                align: 'start',
-                key: 'sales',
-                sortable: false,
+                title: 'Creditors',
+                align: 'center',
+                key: 'creditors',
+                sortable: true,
             },
             {
                 title: 'Actions',
@@ -368,22 +394,20 @@ import Swal from 'sweetalert2';
           {
             number: 1,
             id: 1,
-            image: 'product_placeholder.jpg',
-            product: 'ID Lace',
-            quantity: 500,
-            price: 100,
-            product_status: 'Available',
-            last_modified: '2025-06-13 8:24 PM'
+            enterprise: 'Scheme Rental (Rice)',
+            budget: '',
+            total_mooe: '0.00',
+            total_co: '0.00',
+            overall_total: '0.00',
           },
           {
             number: 2,
             id: 2,
-            image: 'product_placeholder.jpg',
-            product: 'PE Uniform',
-            quantity: 10,
-            price: 350,
-            product_status: 'Not Available',
-            last_modified: '2025-06-13 8:24 PM'
+            enterprise: 'Rice Project',
+            budget: '1,913,672.16',
+            total_mooe: '370,395.59',
+            total_co: '0.00',
+            overall_total: '370,395.59',
           },
         ],
 
@@ -393,7 +417,7 @@ import Swal from 'sweetalert2';
                 active: false
             },
             {
-                title: 'Inventory',
+                title: 'Expenses',
                 active: true
             },
         ]

@@ -9,7 +9,7 @@ import { Head } from '@inertiajs/vue3';
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">Campuses</h2>
+            <h2 class="text-xl font-semibold leading-tight text-gray-800">Categories</h2>
         </template>
 
         <div>
@@ -21,8 +21,8 @@ import { Head } from '@inertiajs/vue3';
                     <div class="p-6 text-gray-900">
                         <v-card flat>
                             <v-card-title class="d-flex align-center pe-2">
-                                <v-icon icon="mdi-account-group"></v-icon> &nbsp;
-                                Campuses
+                                <v-icon icon="mdi-label-multiple"></v-icon> &nbsp;
+                                Categories
 
                                 <v-spacer></v-spacer>
 
@@ -40,9 +40,9 @@ import { Head } from '@inertiajs/vue3';
 
                             <v-divider class="border-opacity-75" :thickness="2"></v-divider>
                             <v-data-table
-                            v-model:search="search"
-                            :filter-keys="['name']" :headers="header"
-                            :items="campuses" hover
+                                v-model:search="search"
+                                :filter-keys="['name']" :headers="header"
+                                :items="categories" hover
                             >
                                 <template v-slot:item.number="{item}">
                                     <div class="text-start">{{ item.number }}</div>
@@ -52,6 +52,7 @@ import { Head } from '@inertiajs/vue3';
                                     <div class="text-end">
                                         <v-btn variant="tonal" color="info" class="mr-2" icon="mdi-eye" size="x-small"></v-btn>
                                         <v-btn variant="tonal" color="warning" class="mr-2"  icon="mdi-pencil" size="x-small"></v-btn>
+                                        <v-btn variant="tonal" color="error"  icon="mdi-delete" size="x-small"></v-btn>
                                     </div>
                                 </template>
                             </v-data-table>
@@ -82,9 +83,9 @@ import { Head } from '@inertiajs/vue3';
                 sortable: false,
             },
             {
-                title: 'Campus',
+                title: 'Category',
                 align: 'center',
-                key: 'campus',
+                key: 'name',
                 sortable: true,
             },
             {
@@ -94,24 +95,21 @@ import { Head } from '@inertiajs/vue3';
                 sortable: false,
             },
         ],
-        items: [
+        categories: [
           {
-            title: 'Malakas',
-            code: '24-0001',
-            quota: 100,
-            status: true,
+            number: 1,
+            id: 1,
+            name: 'Category 1',
           },
           {
-            title: 'Makisig',
-            code: '23-0001',
-            quota: 300,
-            status: false,
+            number: 2,
+            id: 2,
+            name: 'Category 2',
           },
           {
-            title: 'Malupit',
-            code: '22-0001',
-            quota: 150,
-            status: true,
+            number: 3,
+            id: 3,
+            name: 'Category 3',
           },
         ],
 
@@ -121,7 +119,7 @@ import { Head } from '@inertiajs/vue3';
                 active: false
             },
             {
-                title: 'Campuses',
+                title: 'Categories',
                 active: true
             },
         ]

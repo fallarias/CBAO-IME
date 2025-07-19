@@ -18,12 +18,21 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
-        'designation',
+        'last_name',
+        'first_name',
+        'middle_name',
+        'sex',
         'email',
-        'campus_id',
-        'role',
         'password',
+        'campus_id',
+        'designation',
+        'role',
+        'reports',
+        'enterprises',
+        'inventory',
+        'income',
+        'expenses',
+        'updated_by'
     ];
 
     /**
@@ -48,4 +57,15 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    public function campus()
+    {
+        return $this->belongsTo(Campus::class, 'campus_id');
+    }
+
 }

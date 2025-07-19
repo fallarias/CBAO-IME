@@ -4,7 +4,7 @@
         <template v-slot:activator="{ props }">
             <v-btn icon v-bind="props" aria-label="Profile">
                 <v-avatar color="green-lighten-3">
-                    <span style="font-size: 14px; font-weight: 800">CC</span>
+                    <span style="font-size: 14px; font-weight: 800">{{ name.first_name[0] }}{{ name.last_name[0] }}</span>
                 </v-avatar>
             </v-btn>
         </template>
@@ -14,11 +14,11 @@
                     <v-row>
                         <v-col cols="3">
                             <v-avatar color="green-darken-4" >
-                                <span style="font-size: 14px; font-weight: 600">UA</span>
+                                <span style="font-size: 14px; font-weight: 600">{{ name.first_name[0] }}{{ name.last_name[0] }}</span>
                             </v-avatar>
                         </v-col>
                         <v-col>
-                            <h3>{{ name }}</h3>
+                            <h3>{{ name.first_name }} {{ name.last_name }}</h3>
                             <p style="font-size: 12px;">
                                 {{ email_address }}
                             </p>
@@ -50,7 +50,8 @@ import SecondaryButtonWithIconTonalVariant from '@/Components/SecondaryButtonWit
 
 const props = defineProps({
     name: {
-        type: String,
+        type: Object,
+        required: true,
     },
     email_address: {
         type: Boolean,
