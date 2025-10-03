@@ -115,6 +115,12 @@ const proposals_header = ref([
         sortable: false,
     },
     {
+        title: "Proposal Remarks",
+        align: "center",
+        key: "proposal_remarks",
+        sortable: false,
+    },
+    {
         title: "Actions",
         align: "end",
         key: "actions",
@@ -433,6 +439,28 @@ const submit = () => {
                                     </div>
                                 </template>
 
+                                <template
+                                    v-slot:item.proposal_remarks="{ item }"
+                                >
+                                    <div class="text-center">
+                                        <v-btn
+                                            color="light-green-darken-4"
+                                            rounded="0"
+                                            variant="outlined"
+                                            @click="view_remarks_bubble_dialog(1)"
+                                            class="me-2"
+                                            :prepend-icon="$page.props.auth.user.role == 'User' ? 'mdi-comment-outline' : 'mdi-comment-plus-outline'"
+                                        >
+                                            <div v-if="$page.props.auth.user.role == 'User'">
+                                                View Remarks
+                                            </div>
+                                            <div v-else>
+                                                Add Remarks
+                                            </div>
+                                        </v-btn>
+                                    </div>
+                                </template>
+
                                 <template v-slot:item.actions="{ item }">
                                     <div
                                         v-if="
@@ -663,9 +691,12 @@ const submit = () => {
                                             variant="outlined"
                                             @click="view_remarks_bubble_dialog(1)"
                                             class="me-2"
-                                            prepend-icon="mdi-comment-plus-outline"
+                                            :prepend-icon="$page.props.auth.user.role == 'User' ? 'mdi-comment-outline' : 'mdi-comment-plus-outline'"
                                         >
-                                            <div>
+                                            <div v-if="$page.props.auth.user.role == 'User'">
+                                                View Remarks
+                                            </div>
+                                            <div v-else>
                                                 Add Remarks
                                             </div>
                                         </v-btn>
@@ -710,8 +741,10 @@ const submit = () => {
                                 <form>
                                     <div>
                                         <RemarkBubble>
-                                            <div class="flex justify-space-between align-center mt-8">
-
+                                            <div v-if="$page.props.auth.user.role == 'User'" class="text-center mt-8 text-gray-400 text-xs italic">
+                                                You can't reply to this conversation.
+                                            </div>
+                                            <div v-else class="flex justify-space-between align-center mt-8">
                                                 <textarea id="chat" rows="1" class="block mx-4 p-2.5 w-full text-sm text-gray-900 bg-white rounded-lg border border-gray-300 focus:ring-teal-500 focus:border-teal-500" placeholder="Your message..."></textarea>
                                                 <button type="submit" class="inline-flex justify-center p-2 text-teal-600 rounded-full cursor-pointer">
                                                     <svg class="w-5 h-5 rotate-90 rtl:-rotate-90" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="teal" viewBox="0 0 18 20">
