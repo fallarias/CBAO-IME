@@ -38,6 +38,10 @@ const submit = () => {
         </div>
 
         <form @submit.prevent="submit">
+            <div class="mt-2 mb-6">
+                <h1 class="text-3xl font-bold">Log in</h1>
+                <p class="text-gray-500 text-sm">Please enter your login credentials to continue.</p>
+            </div>
             <div>
                 <InputLabel for="email" value="Email" />
 
@@ -49,6 +53,7 @@ const submit = () => {
                     required
                     autofocus
                     autocomplete="username"
+                    placeholder="you@isu.edu.ph"
                 />
 
                 <InputError class="mt-2" :message="form.errors.email" />
@@ -64,36 +69,47 @@ const submit = () => {
                     v-model="form.password"
                     required
                     autocomplete="current-password"
+                    placeholder="********"
                 />
 
                 <InputError class="mt-2" :message="form.errors.password" />
             </div>
 
-            <div class="mt-4 block">
-                <label class="flex items-center">
-                    <Checkbox name="remember" v-model:checked="form.remember" />
-                    <span class="ms-2 text-sm text-gray-600"
-                        >Remember me</span
-                    >
-                </label>
-            </div>
+            <div class="text-end mt-4">
+                <!-- Remember Me and Forgot Password will be here -->
 
-            <div class="mt-4 flex items-center justify-end">
+                <!-- <div class="block">
+                    <label class="flex items-center">
+                        <Checkbox name="remember" v-model:checked="form.remember" />
+                        <span class="ms-2 text-sm text-gray-600"
+                            >Remember me</span
+                        >
+                    </label>
+                </div> -->
+
                 <Link
                     v-if="canResetPassword"
                     :href="route('password.request')"
-                    class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    class="rounded-md text-sm text-teal-600 font-bold hover:text-teal-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
                 >
                     Forgot your password?
                 </Link>
+            </div>
 
+            <div class="mt-6">
                 <PrimaryButton
-                    class="ms-4"
+                class="w-full justify-center"
                     :class="{ 'opacity-25': form.processing }"
                     :disabled="form.processing"
                 >
                     Log in
                 </PrimaryButton>
+            </div>
+
+            <div class="mt-4 mb-2 text-center">
+                <p class="text-sm text-gray-400">
+                    Don't have an account? <br> Please contact the system administrator.
+                </p>
             </div>
         </form>
     </GuestLayout>

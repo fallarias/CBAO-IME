@@ -9,6 +9,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 
 class AccountController extends Controller
@@ -16,11 +17,16 @@ class AccountController extends Controller
     // display list of account
     public function display()
     {
+        // ✅ Check if user is not an admin
+        if (Auth::user()->role !== 'Admin') {
+            return Redirect::route('dashboard');
+        }
+
+        
         // Get list of campuses for dropdown or reference
         $campuses = Campus::select('id', 'campus')->get();
 
-        // Get users with role 'User' and eager load campus relationship
-        $clients = User::with(['campus:id,campus', 'updatedBy:id,first_name,last_name,middle_name'])
+        $users = User::with(['campus:id,campus', 'updatedBy:id,first_name,last_name,middle_name'])
         ->where('role', 'User')
         ->select([
             'id',
@@ -42,8 +48,13 @@ class AccountController extends Controller
             'updated_by',
             'account_status',
         ])
-        ->get()
-        ->map(function ($user, $key) {
+        ->get();
+
+        // ✅ Count totals before mapping
+        $total_male = $users->where('sex', 'Male')->count();
+        $total_female = $users->where('sex', 'Female')->count();
+
+        $clients = $users->map(function ($user, $key) {
             return [
                 'number'        => $key + 1,
                 'id'            => $user->id,
@@ -68,9 +79,16 @@ class AccountController extends Controller
             ];
         });
 
+        $total_users = [
+            'total_male'    => $total_male,
+            'total_female'  => $total_female,
+            'total_overall' => $total_male + $total_female,
+        ];
+
         return Inertia::render('Users/Accounts', [
-            'campuses' => $campuses,
-            'clients'  => $clients
+            'campuses'     => $campuses,
+            'clients'      => $clients,
+            'total_users'  => $total_users,
         ]);
     }
 

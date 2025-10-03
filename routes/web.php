@@ -4,26 +4,39 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\CampusController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EnterpriseController;
 use App\Http\Controllers\IncomeController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProposalController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\UacsController;
+use App\Models\Proposal;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Storage;
+
+// Route::get('/', function () {
+//     return Inertia::render('Welcome', [
+//         'canLogin' => Route::has('login'),
+//         'canRegister' => Route::has('register'),
+//         'laravelVersion' => Application::VERSION,
+//         'phpVersion' => PHP_VERSION,
+//     ]);
+// });
 
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+    if (Auth::check()) {
+        return redirect('/dashboard');
+    }
+
+    return redirect('/login');
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'display'])->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -48,6 +61,8 @@ Route::middleware('auth')->group(function () {
 
     Route::controller(EnterpriseController::class)->group(function(){
         Route::get('/enterprises', 'display')->name('enterprises.display');
+        Route::post('/enterprises', 'store')->name('enterprises.store');
+        Route::put('/enterprises/{id}', 'update')->name('enterprises.update');
     });
 
     Route::controller(EnterpriseController::class)->group(function(){
@@ -60,6 +75,7 @@ Route::middleware('auth')->group(function () {
 
     Route::controller(InventoryController::class)->group(function(){
         Route::get('/inventory', 'display')->name('inventory.display');
+        Route::post('/inventory', 'store')->name('inventory.store');
     });
 
     Route::controller(InventoryController::class)->group(function(){
@@ -80,6 +96,51 @@ Route::middleware('auth')->group(function () {
 
     Route::controller(ExpenseController::class)->group(function(){
         Route::get('/expenses/{id}/view', 'view')->name('expenses.view');
+    });
+
+    Route::controller(ProposalController::class)->group(function(){
+        Route::get('/proposals', 'display')->name('proposal.display');
+        Route::post('/proposals', 'store')->name('proposal.store');
+    });
+
+    Route::middleware(['auth'])->get('/proposals/view/{filename}', function ($filename) {
+        $path = 'proposals/' . $filename;
+    
+        // Check if file exists in private storage
+        if (!Storage::disk('local')->exists($path)) {
+            abort(404, 'File not found');
+        }
+    
+        $user = Auth::user();
+    
+        // Find the proposal by file path
+        $proposal = Proposal::where('proposal_file', 'proposals/' . $filename)->first();
+    
+        if (!$proposal) {
+            abort(404, 'Proposal record not found');
+        }
+    
+        // Authorization check:
+        // - Admin can view all
+        // - User can only view their own
+        if ($user->role !== 'Admin' && $proposal->user_id !== $user->id) {
+            abort(403, 'Unauthorized access to this file');
+        }
+    
+        // Stream the PDF securely
+        return response()->file(
+            Storage::disk('local')->path($path),
+            [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . $filename . '"'
+            ]
+        );
+    })->where('filename', '.*')->name('proposals.secure-view');
+
+    Route::controller(UacsController::class)->group(function(){
+        Route::get('/uacs', 'display')->name('uacs.display');
+        Route::post('/uacs', 'store')->name('uacs.store');
+        Route::put('/uacs/{id}', 'update')->name('uacs.update');
     });
 });
 

@@ -21,7 +21,7 @@ const user_name = {
             
             <v-app-bar-title>
                 <div>
-                    <p class="font-bold">UBAO-IME</p>
+                    <p class="font-bold">URGM</p>
                     <p class="text-xs">Inventory, Monitoring, and Evaluation of Business Enterprise's Income and Expenses</p>
                 </div>
             </v-app-bar-title>
@@ -37,9 +37,9 @@ const user_name = {
                   <v-list-item-title class="navigation" role="link">Dashboard</v-list-item-title>
               </NavLink>
 
-              <NavLink :icon="`mdi-account`">
+              <!-- <NavLink :icon="`mdi-account`">
                   <v-list-item-title class="navigation" role="link">Profile</v-list-item-title>
-              </NavLink>
+              </NavLink> -->
   
             <v-list-group value="Setup" v-if="$page.props.auth.user.role == 'Admin'">
               <template v-slot:activator="{ props }">
@@ -55,12 +55,15 @@ const user_name = {
               <NavLink :href="route('categories.display')" :active="route().current('categories.display')" :icon="`mdi-label-multiple`">
                   <v-list-item-title class="navigation" role="link">Categories</v-list-item-title>
               </NavLink>
+              <NavLink :href="route('uacs.display')" :active="route().current('uacs.display')" :icon="`mdi-label-multiple`">
+                  <v-list-item-title class="navigation" role="link">UACS Code</v-list-item-title>
+              </NavLink>
               
             </v-list-group>
 
             <v-list-group value="Transaction">
               <template v-slot:activator="{ props }">
-                  <v-list-item v-bind="props" prepend-icon="mdi-handshake" title="Transaction"></v-list-item>
+                  <v-list-item v-bind="props" prepend-icon="mdi-handshake" title="Transaction"></v-list-item> 
               </template>
   
               <NavLink :href="route('enterprises.display')" :active="route().current('enterprises.display') || route().current('enterprises.view') || route().current('enterprises.fetch')" :icon="`mdi-cash-multiple`">
@@ -75,12 +78,15 @@ const user_name = {
               <NavLink :href="route('expenses.display')" :active="route().current('expenses.display') || route().current('expenses.view')" :icon="`mdi-cash-remove`">
                   <v-list-item-title class="navigation" role="link">Expenses</v-list-item-title>
               </NavLink>
-              <NavLink :icon="`mdi-trending-up`">
-                  <v-list-item-title class="navigation" role="link">Evaluation</v-list-item-title>
+              <NavLink :href="route('proposal.display')" :active="route().current('proposal.display') || route().current('proposal.view')" :icon="`mdi-file-document-alert-outline`">
+                  <v-list-item-title class="navigation" role="link">Proposal</v-list-item-title>
               </NavLink>
+              <!-- <NavLink :icon="`mdi-trending-up`">
+                  <v-list-item-title class="navigation" role="link">Evaluation</v-list-item-title>
+              </NavLink> -->
             </v-list-group>
 
-            <v-list-group value="Reports">
+            <!-- <v-list-group value="Reports">
               <template v-slot:activator="{ props }">
                   <v-list-item v-bind="props" prepend-icon="mdi-file-chart" title="Reports"></v-list-item>
               </template>
@@ -97,7 +103,7 @@ const user_name = {
               <NavLink :icon="`mdi-trending-up`">
                   <v-list-item-title class="navigation" role="link">Evaluation</v-list-item-title>
               </NavLink>
-            </v-list-group>
+            </v-list-group> -->
   
           </v-list>
         </v-navigation-drawer>

@@ -1,11 +1,11 @@
 <template>
-    <v-row>
-        <v-col cols="12">
-            <v-card elevation="0" class="pa-4 border border-gray-500 h-80">
-                <Line :data="data" :options="options" />
-            </v-card>
-        </v-col>
-    </v-row>
+  <v-row>
+    <v-col cols="12">
+      <v-card elevation="0" class="pa-4 border border-gray-500 h-80">
+        <Bar :data="data" :options="options" />
+      </v-card>
+    </v-col>
+  </v-row>
 </template>
 
 <script lang="ts">
@@ -32,18 +32,42 @@ export default {
   data() {
     return {
       data: {
-        labels: ['January', 'February', 'March', 'April'],
+        labels: ['Echague', 'Cauayan', 'Cabagan', 'Ilagan', 'Roxas', 'Angadanan', 'Jones'],
         datasets: [
-            { 
-                label: 'Monthly Expenses',
-                backgroundColor: '#f87979',
-                data: [20381, 38602, 29705, 54398] 
-            }
+          { 
+            label: 'Monthly Income',  // This label appears in the chart legend, no icon is needed
+            backgroundColor: [
+              '#f87979',  // Echague
+              '#42a5f5',  // Cauayan
+              '#66bb6a',  // Cabagan
+              '#ffeb3b',  // Ilagan
+              '#ff7043',  // Roxas
+              '#8e24aa',  // Angadanan
+              '#26c6da'   // Jones
+            ],
+            data: [10381, 28602, 39705, 34398, 54678, 37594, 24637]
+          }
         ]
       },
       options: {
         responsive: true,
-        maintainAspectRatio: false
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            labels: {
+              generateLabels: (chart) => {
+                // Return a custom label without any icons
+                return chart.data.labels.map((label, i) => ({
+                  text: label,  // Only show the label text
+                  fillStyle: chart.data.datasets[0].backgroundColor[i],  // Use corresponding colors
+                  hidden: false,
+                  lineWidth: 0,
+                  strokeStyle: ''
+                }))
+              }
+            }
+          }
+        }
       }
     }
   }

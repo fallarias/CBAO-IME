@@ -5,7 +5,15 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
 import InputError from '@/Components/InputError.vue';
 import Swal from 'sweetalert2'
-import { ref, watch } from 'vue';
+import { nextTick, ref, watch } from 'vue';
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
+import UserAccountsListPDF from '@/Components/PDFs/UserAccountsListPDF.vue';
+import SelectInput from '@/Components/SelectInput.vue';
+import FilterWrapper from '@/Components/FilterWrapper.vue';
+import ExportSearchWrapper from '@/Components/ExportSearchWrapper.vue';
+import ExportButton from '@/Components/ExportButton.vue';
+import SearchBar from '@/Components/SearchBar.vue';
 
 const page = usePage();
 // const success = ref(page.props.flash?.success);
@@ -21,6 +29,15 @@ const client = {
     client_id: '',
     client_name: ''
 }
+
+const current_user = {
+    name: page.props.auth.user.first_name + " " + page.props.auth.user.last_name,
+    // campus: page.props.auth.user.campus.campus
+}
+
+const isPDFExporting = ref(false)
+const isExcelExporting = ref(false)
+const pdfSection = ref(null)
 const add_user_dialog = ref(false)
 const edit_user_dialog = ref(false)
 const reset_user_password_dialog = ref(false)
@@ -90,6 +107,119 @@ function changeAccountStatus(index){
     change_account_status_form.client_account_status = user.account_status
 
     change_account_status_dialog.value = true;
+}
+
+const formatPrintedDate = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+
+  let hours = now.getHours()
+  const minutes = String(now.getMinutes()).padStart(2, '0')
+  const ampm = hours >= 12 ? 'PM' : 'AM'
+  hours = hours % 12 || 12 // convert 0 to 12
+
+  return `${year}-${month}-${day} at ${hours}:${minutes} ${ampm}`
+}
+
+const generatePdfTitle = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  const reportTitle = 'UserAccounts'
+  const randomId = Math.random().toString(36).substring(2, 8).toUpperCase()
+
+  return `${year}-${month}-${day}_${reportTitle}_${randomId}`
+}
+
+const generatePDF = async () => {
+    isPDFExporting.value = true
+  await nextTick() // Ensure content is rendered
+
+  const doc = new jsPDF('p', 'mm', 'a4')
+  const pdfTitle = generatePdfTitle()
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const pageHeight = doc.internal.pageSize.getHeight()
+
+  doc.setProperties({ title: pdfTitle })
+
+  const logo = new Image()
+  logo.src = '/storage/isu_seal.png' // Make sure this exists in public folder
+
+  logo.onload = async () => {
+    const canvas = await html2canvas(pdfSection.value.$el, { scale: 2 })
+    const imgData = canvas.toDataURL('image/png')
+
+    const contentHeight = (canvas.height * 210) / canvas.width
+    const totalPages = Math.ceil(contentHeight / pageHeight)
+
+    for (let i = 0; i < totalPages; i++) {
+      if (i !== 0) doc.addPage()
+
+      // === HEADER ===
+      doc.addImage(logo, 'PNG', 15, 10, 18, 18)
+      doc.setFontSize(11)
+      doc.setTextColor(0)
+      doc.text('Republic of the Philippines', 40, 15)
+      doc.setFontSize(13)
+      doc.setFont('helvetica', 'bold')
+      doc.text('ISABELA STATE UNIVERSITY', 40, 20)
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'normal')
+      doc.text('Echague, Isabela', 40, 25)
+      doc.setLineWidth(0.1)
+      doc.line(10, 30, pageWidth - 10, 30)
+
+      // === CONTENT ===
+      doc.addImage(
+        imgData,
+        'PNG',
+        10,
+        35,
+        190,
+        0,
+        '',
+        'FAST',
+        0,
+        i * pageHeight * (canvas.width / 210)
+      )
+
+      // === FOOTER ===
+    doc.setFillColor(255, 255, 255)
+    doc.rect(0, pageHeight - 20, pageWidth, 20, 'F')
+
+    // === Left: Page number ===
+    const pageText = `Page ${i + 1} of ${totalPages}`
+    doc.setFontSize(10)
+    doc.setTextColor(0)
+    doc.text(pageText, 10, pageHeight - 10) // left aligned
+
+    // === Right: Printed by and Date ===
+    const printedBy = `Printed by: ${current_user.name}`.toUpperCase()
+    const printedDate = formatPrintedDate().toUpperCase()
+
+    // Printed by
+    doc.setFontSize(8)
+    doc.setTextColor(0) // black
+    const printedByWidth = doc.getTextWidth(printedBy)
+    doc.text(printedBy, pageWidth - printedByWidth - 10, pageHeight - 10)
+
+    // Printed date (lighter gray)
+    doc.setTextColor(160, 160, 160) // lighter gray
+    const printedDateWidth = doc.getTextWidth(printedDate)
+    doc.text(printedDate, pageWidth - printedDateWidth - 10, pageHeight - 6)
+
+
+    }
+
+    // doc.save('isu-enterprise-report.pdf')
+
+    // === STREAM the PDF ===
+    doc.output('dataurlnewwindow') // Stream view in new tab
+    isPDFExporting.value = false
+  }
 }
 
 watch(
@@ -201,87 +331,95 @@ const change_account_status = (id) => {
 
                     <div class="p-6 text-gray-900">
                         <v-card flat>
-                            <v-card-title class="d-flex align-center pe-2">
-                                <v-icon icon="mdi-account-group"></v-icon> &nbsp;
-                                User Accounts
+                            <v-card-title class="d-flex align-center pe-2 justify-space-between">
+                                <!-- Left Section: Icon + Text -->
+                                <div class="d-flex align-center pe-2">
+                                    <v-icon
+                                        :size="$vuetify.display.smAndDown ? 18 : 24"
+                                        class="me-2 font-weight-bold"
+                                    >
+                                        mdi-account-group
+                                    </v-icon>
+                                    <span
+                                        :class="$vuetify.display.smAndDown ? 'text-lg font-weight-semibold' : 'text-2xl font-weight-semibold'"
+                                    >
+                                        User Accounts
+                                    </span>
+                                </div>
 
-                                
-
-                                <!-- <v-spacer></v-spacer>
-
-                                <v-text-field
-                                    v-model="search"
-                                    density="compact"
-                                    label="Search"
-                                    prepend-inner-icon="mdi-magnify"
-                                    variant="solo-filled"
-                                    flat
-                                    hide-details
-                                    single-line
-                                ></v-text-field>
-
+                                <!-- Right Section: Responsive Button -->
+                                <div>
+                                <!-- Full button for medium and up -->
                                 <v-btn
-                                    class="ms-2 text-none tracking-normal"
-                                    prepend-icon="mdi-refresh"
-                                    rounded="l"
-                                    text="Refresh"
-                                    border
-                                    variant="tonal"
-                                    color="green-darken-4"
-                                    @click="onClick"
-                                ></v-btn>
-
-                                <v-btn
+                                    v-if="!$vuetify.display.smAndDown"
                                     class="ms-2 text-none tracking-normal"
                                     prepend-icon="mdi-plus"
                                     rounded="l"
-                                    text="Add Product"
+                                    text="Add New Record"
                                     variant="flat"
                                     color="green-darken-4"
-                                    @click="dialog = true"
-                                ></v-btn> -->
+                                    @click="add_user_dialog = true"
+                                ></v-btn>
+
+                                <!-- Icon-only button for small devices -->
+                                <v-btn
+                                    v-else
+                                    class="ms-2"
+                                    icon
+                                    variant="flat"
+                                    color="green-darken-4"
+                                    @click="add_user_dialog = true"
+                                >
+                                    <v-icon size="18" class="font-weight-bold">mdi-plus</v-icon>
+                                </v-btn>
+                                </div>
                             </v-card-title>
 
-                            <div class="mb-3">
-                                <v-row dense>
-                                    <v-col cols="12" md="9" lg="9">
-                                        <v-text-field
-                                            v-model="search"
-                                            density="compact"
-                                            label="Search"
-                                            prepend-inner-icon="mdi-magnify"
-                                            variant="solo-filled"
-                                            flat
-                                            hide-details
-                                            single-line class="border"
-                                        ></v-text-field>
-                                    </v-col>
-                                    <v-col cols="12" md="3" lg="3" class="text-end">
-                                        <div>
-                                            <v-btn
-                                            class="ms-2 text-none tracking-normal"
-                                            prepend-icon="mdi-refresh"
-                                            rounded="l"
-                                            text="Refresh"
-                                            border
-                                            variant="tonal"
-                                            color="green-darken-4"
-                                            @click="onClick"
-                                        ></v-btn>
+                            <ExportSearchWrapper>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <ExportButton
+                                        :text="isExcelExporting ? 'Exporting...' : 'Export to Excel'"
+                                        icon="mdi-file-excel"
+                                        @click="generateExcel"
+                                        :disabled="isExcelExporting"
+                                    />
+                                    <ExportButton
+                                        :text="isPDFExporting ? 'Generating PDF...' : 'Print to PDF'"
+                                        icon="mdi-printer"
+                                        @click="generatePDF"
+                                        :disabled="isPDFExporting"
+                                    />
+                                </div>
+                                <SearchBar v-model="search" />
+                            </ExportSearchWrapper>
 
-                                        <v-btn
-                                            class="ms-2 text-none tracking-normal"
-                                            prepend-icon="mdi-plus"
-                                            rounded="l"
-                                            text="Add User"
-                                            variant="flat"
-                                            color="green-darken-4"
-                                            @click="add_user_dialog = true"
-                                        ></v-btn>
-                                        </div>
-                                    </v-col>
-                                </v-row>
+                            <div class="mb-6 mt-4">
+                                <FilterWrapper>
+                                    <!-- Campus Filter -->
+                                    <SelectInput>
+                                        <option disabled value="">-- Filter by Campus --</option>
+                                        <option value="All">All Campuses</option>
+                                        <option value="San Mateo">San Mateo</option>
+                                        <option value="Cauayan">Cauayan</option>
+                                    </SelectInput>
+
+                                    <!-- Sex Filter -->
+                                    <SelectInput>
+                                        <option disabled value="">-- Filter by Sex --</option>
+                                        <option value="Male">All</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                    </SelectInput>
+
+                                    <!-- Account Status Filter -->
+                                    <SelectInput>
+                                        <option disabled value="">-- Filter by Status --</option>
+                                        <option value="Active">Active</option>
+                                        <option value="Inactive">Inactive</option>
+                                    </SelectInput>
+                                </FilterWrapper>
                             </div>
+
 
                             <v-divider class="border-opacity-75" :thickness="2"></v-divider>
 
@@ -792,6 +930,12 @@ const change_account_status = (id) => {
                             </v-card>
                          </v-dialog>
                      </div>
+
+
+                     <!-- pdf  -->
+                      <div>
+                        <UserAccountsListPDF v-show="isPDFExporting" ref="pdfSection" :current_user="current_user" :user_accounts="$page.props.clients" :total_users="$page.props.total_users"/>
+                      </div>
                 </div>
             </div>
         </div>
@@ -891,3 +1035,10 @@ const change_account_status = (id) => {
     }
   }
 </script>
+
+<style scoped>
+:deep(.v-field input:focus) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+</style>

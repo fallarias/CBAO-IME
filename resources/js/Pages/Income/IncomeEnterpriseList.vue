@@ -39,14 +39,74 @@ const submit = () => {
                 <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg  border border-stone-200">
                     <div class="p-6 text-gray-900">
                         <v-card flat>
-                            <v-card-title class="d-flex align-center pe-2">
-                                <v-icon icon="mdi-cash-remove"></v-icon> &nbsp;
-                                Income
+                            <v-card-title class="d-flex align-center pe-2 justify-space-between">
+                                <!-- Left Section: Icon + Text -->
+                                <div class="d-flex align-center pe-2">
+                                    <v-icon
+                                        :size="$vuetify.display.smAndDown ? 18 : 24"
+                                        class="me-2 font-weight-bold"
+                                    >
+                                        mdi-cash-plus
+                                    </v-icon>
+                                    <span
+                                        :class="$vuetify.display.smAndDown ? 'text-lg font-weight-semibold' : 'text-2xl font-weight-semibold'"
+                                    >
+                                        Income
+                                    </span>
+                                </div>
 
-                                
+                                <!-- Right Section: Responsive Button -->
+                                <div>
+                                <!-- Full button for medium and up -->
+                                <v-btn
+                                    v-if="!$vuetify.display.smAndDown"
+                                    class="ms-2 text-none tracking-normal"
+                                    prepend-icon="mdi-plus"
+                                    rounded="l"
+                                    text="Add New Record"
+                                    variant="flat"
+                                    color="green-darken-4"
+                                    @click="add_new_dialog = true"
+                                ></v-btn>
 
-                                <!-- <v-spacer></v-spacer>
+                                <!-- Icon-only button for small devices -->
+                                <v-btn
+                                    v-else
+                                    class="ms-2"
+                                    icon
+                                    variant="flat"
+                                    color="green-darken-4"
+                                    @click="add_new_dialog = true"
+                                >
+                                    <v-icon size="18" class="font-weight-bold">mdi-plus</v-icon>
+                                </v-btn>
+                                </div>
+                            </v-card-title>
 
+                            <div class="my-3 d-flex flex-column flex-sm-row align-start align-sm-center justify-space-between gap-2">
+                                <!-- Left: Buttons -->
+                                <div class="d-flex flex-wrap gap-2">
+                                    <v-btn
+                                    class="text-none tracking-normal"
+                                    prepend-icon="mdi-file-excel"
+                                    rounded="l"
+                                    text="Download Excel"
+                                    variant="flat"
+                                    color="grey-lighten-3"
+                                    @click="generatePDF"
+                                    ></v-btn>
+                                    <v-btn
+                                    class="text-none tracking-normal"
+                                    prepend-icon="mdi-printer"
+                                    rounded="l"
+                                    text="Print PDF"
+                                    variant="flat"
+                                    color="grey-lighten-3"
+                                    @click="generatePDF"
+                                    ></v-btn>
+                                </div>
+
+                                <!-- Right: Search Field -->
                                 <v-text-field
                                     v-model="search"
                                     density="compact"
@@ -56,79 +116,40 @@ const submit = () => {
                                     flat
                                     hide-details
                                     single-line
+                                    class="border"
+                                    :style="{
+                                    minWidth: '200px',
+                                    width: $vuetify.display.smAndDown ? '100%' : '300px'
+                                    }"
                                 ></v-text-field>
+                            </div>
 
-                                <v-btn
-                                    class="ms-2 text-none tracking-normal"
-                                    prepend-icon="mdi-refresh"
-                                    rounded="l"
-                                    text="Refresh"
-                                    border
-                                    variant="tonal"
-                                    color="green-darken-4"
-                                    @click="onClick"
-                                ></v-btn>
-
-                                <v-btn
-                                    class="ms-2 text-none tracking-normal"
-                                    prepend-icon="mdi-plus"
-                                    rounded="l"
-                                    text="Add Product"
-                                    variant="flat"
-                                    color="green-darken-4"
-                                    @click="dialog = true"
-                                ></v-btn> -->
-                            </v-card-title>
-
-                            <div class="mb-3">
-                                <v-row dense>
-                                    <v-col cols="12" md="9" lg="9">
-                                        <v-text-field
-                                            v-model="search"
-                                            density="compact"
-                                            label="Search"
-                                            prepend-inner-icon="mdi-magnify"
-                                            variant="solo-filled"
-                                            flat
-                                            hide-details
-                                            single-line class="border"
-                                        ></v-text-field>
-                                    </v-col>
-                                    <v-col cols="12" md="3" lg="3" class="text-end">
-                                        <div>
-                                            <v-btn
-                                            class="ms-2 text-none tracking-normal"
-                                            prepend-icon="mdi-refresh"
-                                            rounded="l"
-                                            text="Refresh"
-                                            border
-                                            variant="tonal"
-                                            color="green-darken-4"
-                                            @click="onClick"
-                                        ></v-btn>
-
-                                        <v-btn
-                                            class="ms-2 text-none tracking-normal"
-                                            prepend-icon="mdi-plus"
-                                            rounded="l"
-                                            text="Add New"
-                                            variant="flat"
-                                            color="green-darken-4"
-                                            @click="dialog = true"
-                                        ></v-btn>
-                                        </div>
-                                    </v-col>
-                                </v-row>
+                            <div class="d-flex mb-4">
+                                <form>
+                                    <select id="income_year" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                                        <option value="" disabled>Select Year</option>
+                                        <option value="2025" selected>2025</option>
+                                    </select>
+                                </form>
+                                <form class="ms-2">
+                                    <select v-model="selectedQuarter" id="income_year" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" @change="updateTableHeaders">
+                                        <option value="" disabled>Select Quarter</option>
+                                        <option value="All" selected>All Quarters</option>
+                                        <option value="Q1" >Quarter 1</option>
+                                        <option value="Q2" >Quarter 2</option>
+                                        <option value="Q3" >Quarter 3</option>
+                                        <option value="Q4" >Quarter 4</option>
+                                    </select>
+                                </form>
                             </div>
 
                             <v-divider class="border-opacity-75" :thickness="2"></v-divider>
 
                             <v-data-table
-                                v-model:search="search"
-                                :filter-keys="['name']" :headers="header"
+                                v-model:search="search" :headers="headers"
                                 :items="products" hover :loading="loading"
                             >
-                                <template v-slot:loading>
+                                <!-- <template v-slot:loading>
                                     <v-skeleton-loader type="table-row@5"></v-skeleton-loader>
                                 </template>
 
@@ -140,14 +161,14 @@ const submit = () => {
                                     <td style="width: fit-content; white-space: nowrap;">
                                         {{ item.enterprise }}
                                     </td>
-                                </template>
+                                </template> -->
 
                                 <template v-slot:item.actions="{ item }">
-                                    <td style="width: fit-content; white-space: nowrap;" class="text-end">
-                                        <v-btn variant="flat" color="info" class="mr-2 text-none" prepend-icon="mdi-eye">View</v-btn>
-                                        <v-btn variant="flat" color="error" class="mr-2 text-none" prepend-icon="mdi-delete" @click="deleteProduct">Remove</v-btn>
-                                        <!-- <v-btn variant="tonal" color="warning" class="mr-2"  icon="mdi-pencil" size="x-small"></v-btn>
-                                        <v-btn variant="tonal" color="error"  icon="mdi-delete" size="x-small"></v-btn> -->
+                                    <td class="flex justify-end">
+                                        <!-- <v-btn variant="flat" color="info" class="mr-2 text-none" prepend-icon="mdi-eye">View</v-btn>
+                                        <v-btn variant="flat" color="error" class="mr-2 text-none" prepend-icon="mdi-delete" @click="deleteProduct">Remove</v-btn> -->
+                                        <v-btn variant="tonal" color="warning" class="mr-2"  icon="mdi-pencil" size="x-small"></v-btn>
+                                        <v-btn variant="tonal" color="error"  icon="mdi-delete" size="x-small"></v-btn>
                                     </td>
                                 </template>
                             </v-data-table>
@@ -287,6 +308,35 @@ import Swal from 'sweetalert2';
         dialog: false,
         previewUrl: null,
         previewImageDialog: false,
+        selectedQuarter: 'All',
+        headers: [
+            { title: '#', key: 'number' },
+            { title: 'Enterprise', key: 'enterprise' },
+            { title: `2024 Continuing`, key: 'continuing' },
+            { title: 'January', key: 'jan' },
+            { title: 'February', key: 'feb' },
+            { title: 'March', key: 'mar' },
+            { title: 'April', key: 'apr' },
+            { title: 'May', key: 'may' },
+            { title: 'June', key: 'jun' },
+            { title: 'July', key: 'jul' },
+            { title: 'August', key: 'aug' },
+            { title: 'September', key: 'sep' },
+            { title: 'October', key: 'oct' },
+            { title: 'November', key: 'nov' },
+            { title: 'December', key: 'dec' },
+            { title: `${new Date().getFullYear()} Current`, key: 'current' },
+            {
+                title: 'Actions',
+                align: 'end',
+                key: 'actions',
+                sortable: false,
+            },
+        ],
+        allData: [
+            { number: 1, enterprise: 'ABC Corp', continuing: 5000, jan: 1500, feb: 2000, mar: 1500, apr: 0, may: 0, jun: 0, jul: 0, aug: 0, sep: 0, oct: 0, nov: 0, dec: 0, current: 0 },
+            { number: 2, enterprise: 'XYZ Ltd', continuing: 7000, jan: 2000, feb: 2500, mar: 2500, apr: 0, may: 0, jun: 0, jul: 0, aug: 0, sep: 0, oct: 0, nov: 0, dec: 0, current: 0 },
+        ],
         header: [
             {
                 title: '#',
@@ -396,38 +446,40 @@ import Swal from 'sweetalert2';
             number: 1,
             id: 1,
             enterprise: 'Scheme Rental (Rice)',
+            continuing: '23,000',
             current: '0.00',
-            january: '0.00',
-            february: '0.00',
-            march: '0.00',
-            april: '0.00',
+            jan: '0.00',
+            feb: '0.00',
+            mar: '0.00',
+            apr: '0.00',
             may: '0.00',
-            june: '0.00',
-            july: '0.00',
-            august: '0.00',
-            september: '0.00',
-            october: '0.00',
-            november: '0.00',
-            december: '0.00',
+            jun: '0.00',
+            jul: '0.00',
+            aug: '0.00',
+            sep: '0.00',
+            oct: '0.00',
+            nov: '0.00',
+            dec: '0.00',
             overall_total: '0.00',
           },
           {
             number: 2,
             id: 2,
             enterprise: 'Rice Project',
+            continuing: '53,000',
             current: '0.00',
-            january: '0.00',
-            february: '0.00',
-            march: '0.00',
-            april: '0.00',
+            jan: '0.00',
+            feb: '0.00',
+            mar: '0.00',
+            apr: '0.00',
             may: '0.00',
-            june: '0.00',
-            july: '0.00',
-            august: '0.00',
-            september: '0.00',
-            october: '0.00',
-            november: '0.00',
-            december: '0.00',
+            jun: '0.00',
+            jul: '0.00',
+            aug: '0.00',
+            sep: '0.00',
+            oct: '0.00',
+            nov: '0.00',
+            dec: '0.00',
             overall_total: '0.00',
           },
         ],
@@ -444,6 +496,12 @@ import Swal from 'sweetalert2';
         ]
       }
     },
+    computed: {
+        filteredData() {
+        // You can also slice/filter by months if needed here
+            return this.allData;
+        }
+    },
     methods: {
         handleFileChange(event) {
             const file = event.target.files[0]
@@ -455,6 +513,99 @@ import Swal from 'sweetalert2';
                 reader.readAsDataURL(file)
             } else {
                 this.previewUrl = null
+            }
+        },
+        updateTableHeaders() {
+            switch (this.selectedQuarter) {
+                case 'Q1':
+                    this.headers = [
+                        { title: '#', key: 'number' },
+                        { title: 'Enterprise', key: 'enterprise' },
+                        { title: `${new Date().getFullYear()} Current`, key: 'current' },
+                        { title: 'January', key: 'jan' },
+                        { title: 'February', key: 'feb' },
+                        { title: 'March', key: 'mar' },
+                        {
+                            title: 'Actions',
+                            align: 'end',
+                            key: 'actions',
+                            sortable: false,
+                        },
+                    ];
+                    break;
+                case 'Q2':
+                    this.headers = [
+                        { title: '#', key: 'number' },
+                        { title: 'Enterprise', key: 'enterprise' },
+                        { title: `${new Date().getFullYear()} Current`, key: 'current' },
+                        { title: 'April', key: 'apr' },
+                        { title: 'May', key: 'may' },
+                        { title: 'June', key: 'jun' },
+                        {
+                            title: 'Actions',
+                            align: 'end',
+                            key: 'actions',
+                            sortable: false,
+                        },
+                    ];
+                    break;
+                case 'Q3':
+                    this.headers = [
+                        { title: '#', key: 'number' },
+                        { title: 'Enterprise', key: 'enterprise' },
+                        { title: `${new Date().getFullYear()} Current`, key: 'current' },
+                        { title: 'July', key: 'jul' },
+                        { title: 'August', key: 'aug' },
+                        { title: 'September', key: 'sep' },
+                        {
+                            title: 'Actions',
+                            align: 'end',
+                            key: 'actions',
+                            sortable: false,
+                        },
+                    ];
+                    break;
+                case 'Q4':
+                    this.headers = [
+                        { title: '#', key: 'number' },
+                        { title: 'Enterprise', key: 'enterprise' },
+                        { title: `${new Date().getFullYear()} Current`, key: 'current' },
+                        { title: 'October', key: 'oct' },
+                        { title: 'November', key: 'nov' },
+                        { title: 'December', key: 'dec' },
+                        {
+                            title: 'Actions',
+                            align: 'end',
+                            key: 'actions',
+                            sortable: false,
+                        },
+                    ];
+                    break;
+                case 'All':
+                    this.headers = [
+                        { title: '#', key: 'number' },
+                        { title: 'Enterprise', key: 'enterprise' },
+                        { title: `${new Date().getFullYear()} Current`, key: 'current' },
+                        { title: 'January', key: 'jan' },
+                        { title: 'February', key: 'feb' },
+                        { title: 'March', key: 'mar' },
+                        { title: 'April', key: 'apr' },
+                        { title: 'May', key: 'may' },
+                        { title: 'June', key: 'jun' },
+                        { title: 'July', key: 'jul' },
+                        { title: 'August', key: 'aug' },
+                        { title: 'September', key: 'sep' },
+                        { title: 'October', key: 'oct' },
+                        { title: 'November', key: 'nov' },
+                        { title: 'December', key: 'dec' },
+                        {
+                            title: 'Actions',
+                            align: 'end',
+                            key: 'actions',
+                            sortable: false,
+                        },
+                    ];
+                    break;
             }
         },
         addProduct(){
