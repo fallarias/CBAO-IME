@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Campus;
 use App\Models\Enterprise;
+use App\Models\Inventory;
+use App\Models\UserLogs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -19,46 +21,36 @@ class EnterpriseController extends Controller
         $campuses = Campus::select('id', 'campus')->get();
 
         // Enterprises query with campus relationship
-        $enterprisesQuery = Enterprise::with('campus:id,campus') // eager load campus name
+        $enterprisesQuery = Enterprise::with('campus:id,campus') // eager load campus name only
+            ->select('id', 'campus_id', 'user_id', 'enterprise', 'category', 'inventory', 'created_at', 'updated_at', 'updated_by')
             ->when($user->role !== 'Admin', function ($query) use ($user) {
                 $query->where('campus_id', $user->campus->id);
             })
-            ->orderBy('enterprise', 'asc');
+            ->orderBy('created_at', 'desc');
 
         $enterprises = $enterprisesQuery->get();
 
-        // All enterprises (cloned + add number)
-        $all_enterprises = $enterprises
-            ->map(fn ($item) => clone $item)
-            ->values()
-            ->map(function ($item, $key) {
-                $item->number = $key + 1;
-                // flatten campus name for easier access in Vue
-                $item->campus_name = $item->campus->campus ?? null;
-                return $item;
-            });
 
-        // Agri-based
-        $agri_based = $enterprises
-            ->where('category', 'Agri-based')
-            ->map(fn ($item) => clone $item)
-            ->values()
-            ->map(function ($item, $key) {
-                $item->number = $key + 1;
-                $item->campus_name = $item->campus->campus ?? null;
-                return $item;
-            });
+        // Helper closure for transformation
+        $transformEnterprise = function ($collection) {
+            return $collection
+                ->values()
+                ->map(function ($item, $key) {
+                    $item->number = $key + 1;
+                    $item->campus_name = $item->campus->campus ?? null;
+                    $item->inventory = (bool) $item->inventory;
+                    $item->added_by = $item->user
+                        ? ($item->user->first_name . ' ' . $item->user->last_name)
+                        : 'Admin';
+                    $item->added_at = $item->created_at->format('Y-m-d \a\t h:i A');
+                    return $item;
+                });
+        };
 
-        // Non-agri-based
-        $non_agri_based = $enterprises
-            ->where('category', 'Non agri-based')
-            ->map(fn ($item) => clone $item)
-            ->values()
-            ->map(function ($item, $key) {
-                $item->number = $key + 1;
-                $item->campus_name = $item->campus->campus ?? null;
-                return $item;
-            });
+        // Transform each group
+        $all_enterprises   = $transformEnterprise($enterprises);
+        $agri_based        = $transformEnterprise($enterprises->where('category', 'Agri-based'));
+        $non_agri_based    = $transformEnterprise($enterprises->where('category', 'Non agri-based'));
 
         // Totals
         $enterprises_total = [
@@ -79,17 +71,41 @@ class EnterpriseController extends Controller
     // add new bsusiness enterprise
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'enterprise' => 'required|string|max:255',
             'category' => 'required|string|in:Agri-based,Non agri-based',
+            'inventory' => 'nullable|boolean',
+            'campus_id' => 'required|integer|exists:campuses,id',
         ]);
 
+        // $campus_id = Auth::user()->campus->id;
+        // if (Auth::user()->role != 'User'){
+        //     $campus_id = $request->campus_id;
+        // }
+
         try {
-            Enterprise::create([
-                'campus_id' => Auth::user()->campus->id,
-                'enterprise' => $request->enterprise,
-                'category' => $request->category,
+            $enterprise = Enterprise::create([
+                'campus_id' => $validated['campus_id'],
+                'enterprise' => $validated['enterprise'],
+                'category' => $validated['category'],
+                'inventory' => $validated['inventory'],
+                'user_id' => Auth::user()->id
             ]);
+
+            if ($validated['inventory'] == true) {
+                Inventory::create([
+                    'campus_id' => $validated['campus_id'],
+                    'enterprise_id' => $enterprise->id,
+                    'updated_by' => Auth::user()->id
+                ]);
+            }
+            
+            UserLogs::create([
+                'user_id' => Auth::user()->id,
+                'action' => 'Added Business Enterprise',
+                'description' => 'User ' . Auth::user()->first_name . ' ' . Auth::user()->last_name . ' added a new business enterprise: ' . $validated['enterprise'] . '.',
+            ]);
+
 
             return redirect()->back()->with('success', 'Business enterprise added successfully.');
         } catch (\Exception $e) {
@@ -99,17 +115,33 @@ class EnterpriseController extends Controller
 
     public function update(Request $request, $id)
     {
-        $request->validate([
+        $validated = $request->validate([
             'enterprise' => 'required|string|max:255',
             'category' => 'required|string|in:Agri-based,Non agri-based',
+            'inventory' => 'nullable|boolean',
+            'campus_id' => 'required|integer|exists:campuses,id',
         ]);
+
+        // $campus_id = Auth::user()->campus->id;
+        // if (Auth::user()->role != 'User'){
+        //     $campus_id = $request->campus_id;
+        // }
 
         try {
             $enterprise = Enterprise::findOrFail($id);
 
             $enterprise->update([
-                'enterprise' => $request->enterprise,
-                'category' => $request->category,
+                'campus_id' => $validated['campus_id'],
+                'enterprise' => $validated['enterprise'],
+                'category' => $validated['category'],
+                'inventory' => $validated['inventory'],
+                'updated_by' => Auth::user()->id
+            ]);
+
+            UserLogs::create([
+                'user_id' => Auth::user()->id,
+                'action' => 'Updated a business enterprise',
+                'description' => 'User ' . Auth::user()->first_name . ' ' . Auth::user()->last_name . ' has updated the business enterprise: ' . $validated['enterprise'] . '.',
             ]);
 
             return redirect()->back()->with('success', 'Business enterprise updated successfully.');

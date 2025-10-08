@@ -34,14 +34,32 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 // 'user' => $request->user(),
-                'user' => fn () => $request->user()
-                    ? $request->user()->only(['id', 'campus_id', 'avatar', 'first_name', 'middle_name', 'last_name', 'email', 'designation', 'role', 'sex'])
-                    : null,
+                'user' => fn () => $request->user() ? [
+                    'id' => $request->user()->id,
+                    'campus' => [
+                        'id' => $request->user()->campus_id,
+                        'campus' => optional($request->user()->campus)->campus, // ✅ campus name from relationship
+                    ],
+                    'avatar' => $request->user()->avatar,
+                    'first_name' => $request->user()->first_name,
+                    'middle_name' => $request->user()->middle_name,
+                    'last_name' => $request->user()->last_name,
+                    'email' => $request->user()->email,
+                    'designation' => $request->user()->designation,
+                    'role' => $request->user()->role,
+                    'sex' => $request->user()->sex,
+                ] : null,
 
             ],
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
+            ],
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error'   => fn () => $request->session()->get('error'),
+                'info'    => fn () => $request->session()->get('info'),
+                'warning' => fn () => $request->session()->get('warning'),
             ],
         ];
     }

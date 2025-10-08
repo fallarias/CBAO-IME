@@ -1,25 +1,291 @@
 <script setup>
 import Breadcrumbs from '@/Components/Breadcrumbs.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
+import { nextTick, ref, watch, computed, reactive, onMounted } from 'vue';
 
-const form = useForm({
-    product_name: '',
-    product_name: '',
-    product_quantity: 0,
-    product_price: 0.00,
-    product_category: '',
+const page = usePage()
+const loading = ref(false)
+const search = ref('')
+
+// filtering
+const income_list = ref(page.props.incomes)
+
+// 🧩 Define any number of filters you want
+const { list, filter, filteredList } = useListFilter(income_list.value, {
+  campus: "",
+  quarter: "",
+  year: new Date().getFullYear(),
+})
+
+const allHeaders = [
+  { title: "#", align: "start", key: "number" },
+  { title: "Campus", align: "start", key: "campus" },
+  { title: "Enterprise", align: "start", key: "enterprise" },
+  { title: `${filter.value.year - 1} Continuing`, align: "start", key: "continuing" },
+  { title: "January", align: "start", key: "january" },
+  { title: "February", align: "start", key: "february" },
+  { title: "March", align: "start", key: "march" },
+  { title: "April", align: "start", key: "april" },
+  { title: "May", align: "start", key: "may" },
+  { title: "June", align: "start", key: "june" },
+  { title: "July", align: "start", key: "july" },
+  { title: "August", align: "start", key: "august" },
+  { title: "September", align: "start", key: "september" },
+  { title: "October", align: "start", key: "october" },
+  { title: "November", align: "start", key: "november" },
+  { title: "December", align: "start", key: "december" },
+  { title: `${filter.value.year} Current`, align: "start", key: "current" },
+  { title: "Last Modified", align: "center", key: "last_modified" },
+  { title: "Actions", align: "end", key: "actions" },
+];
+
+// 🧠 setup composable
+// const { list, filter, filteredList } = useListFilter(income_list.value, {
+//   campus: "",
+//   status: "",
+//   year: new Date().getFullYear(),
+//   quarter: "All",
+// });
+
+// 🗓️ Define months per quarter
+const quarterMonths = {
+  All: [
+    "january","february","march","april","may","june",
+    "july","august","september","october","november","december"
+  ],
+  Q1: ["january", "february", "march"],
+  Q2: ["april", "may", "june"],
+  Q3: ["july", "august", "september"],
+  Q4: ["october", "november", "december"],
+};
+
+// 🧩 Computed headers based on selected quarter
+const tableHeaders = computed(() => {
+  // base columns always shown
+  const baseCols = ["number", "campus", "enterprise", "continuing", "current", "last_modified", "actions"];
+  const selectedQuarter = filter.value.quarter || "All";
+  const months = quarterMonths[selectedQuarter] || quarterMonths["All"];
+
+  return allHeaders.filter(
+    (h) => baseCols.includes(h.key) || months.includes(h.key)
+  );
 });
+// const filter = ref({
+//     campus: '',
+//     year: new Date().getFullYear()
+// })
 
-const submit = () => {
-    form.post(route('login'), {
-        onFinish: () => form.reset('password'),
+// import existing iges
+const import_enterprises_dialog = ref(false);
+const is_importing = ref(false);
+const import_progress = ref(0);
+
+const import_enterprise_form = useForm({
+    campus_id: page.props.auth.user.campus.id
+})
+
+const handle_import_enterprises = () => {
+
+    // Trigger backend route (Laravel: route('income.import'))
+    import_enterprise_form.post(route("income.import"), {
+        onSuccess: () => {
+            import_enterprises_dialog.value = false;
+        },
     });
 };
+
+const handle_redirect = () => {
+    router.get(route('enterprises.display'));
+};
+// end import existing iges
+
+// add income
+const add_income_dialog = ref(false)
+const add_income_form = useForm({
+    year: new Date().getFullYear(),
+    enterprise: '',
+    income_id: '',
+    continuing: '', 
+    january: '',
+    february: '',
+    march: '',
+    april: '',
+    may: '',
+    june: '',
+    july: '',
+    august: '',
+    september: '',
+    october: '',
+    november: '',
+    december: '',
+    current: ''
+})
+// end add income
+
+// edit income
+const monthly_text_fields = [
+    { text: 'January', value: 'january' },
+    { text: 'February', value: 'february' },
+    { text: 'March', value: 'march' },
+    { text: 'April', value: 'april' },
+    { text: 'May', value: 'may' },
+    { text: 'June', value: 'june' },
+    { text: 'July', value: 'july' },
+    { text: 'August', value: 'august' },
+    { text: 'September', value: 'september' },
+    { text: 'October', value: 'october' },
+    { text: 'November', value: 'november' },
+    { text: 'December', value: 'december' }
+]
+
+const edit_income_dialog = ref(false)
+const edit_income_form = useForm({
+    income_id: '',
+    campus_id: page.props.auth.user.campus.id,
+    enterprise_id: '',
+    enterprise: '',
+    continuing: 0.00,
+    january: 0.00,
+    february: 0.00,
+    march: 0.00,
+    april: 0.00,
+    may: 0.00,
+    june: 0.00,
+    july: 0.00,
+    august: 0.00,
+    september: 0.00,
+    october: 0.00,
+    november: 0.00,
+    december: 0.00,
+    current: 0.00
+})
+// 🗓️ Get the current month (0 = Jan, 9 = Oct, etc.)
+const currentMonthIndex = new Date().getMonth()
+
+// 🧩 Separate display layer for formatted text
+const formattedFields = reactive({});
+
+// 💡 Helper: format with commas and two decimals max
+function formatWithCommas(value) {
+  if (value === null || value === undefined || value === "") return "";
+  const parts = value.toString().split(".");
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  if (parts.length > 1) {
+    return `${parts[0]}.${parts[1].slice(0, 2)}`;
+  }
+  return parts[0];
+}
+
+
+// 🎯 Handle input — keep numeric in form, formatted in view
+function onInput(event, key) {
+  const raw = event.target.value.replace(/,/g, "");
+  const numeric = raw === "" ? 0 : parseFloat(raw);
+
+  // Save raw numeric value
+  edit_income_form[key] = isNaN(numeric) ? 0 : numeric;
+
+  // Show formatted value
+  formattedFields[key] = formatWithCommas(raw);
+
+  updateCurrent();
+}
+
+// 🧮 Update total current (sum of all months)
+function updateCurrent() {
+  let total = 0;
+
+  monthly_text_fields.forEach(({ value }) => {
+    const val = parseFloat(edit_income_form[value]) || 0;
+    total += val;
+  });
+
+  // numeric only in form
+  edit_income_form.current = parseFloat(total.toFixed(2));
+
+  // formatted display for disabled input
+  formattedFields.current = formatWithCommas(edit_income_form.current);
+}
+
+// 🧠 Initialize formatted fields after component mounts
+onMounted(() => {
+  for (const key in edit_income_form) {
+    if (Object.hasOwn(edit_income_form, key)) {
+      formattedFields[key] = formatWithCommas(edit_income_form[key]);
+    }
+  }
+});
+
+const handle_edit_income = (income_id) => {
+    const income = page.props.incomes.find(
+        (i) => i.id === income_id
+    )
+
+    if (income) {
+        edit_income_form.income_id = income.id
+        edit_income_form.enterprise_id = income.enterprise_id
+        edit_income_form.enterprise = income.enterprise
+        edit_income_form.continuing = income.continuing
+        edit_income_form.january = income.january
+        edit_income_form.february = income.february
+        edit_income_form.march = income.march
+        edit_income_form.april = income.april
+        edit_income_form.may = income.may
+        edit_income_form.june = income.june
+        edit_income_form.july = income.july
+        edit_income_form.august = income.august
+        edit_income_form.september = income.september
+        edit_income_form.october = income.october
+        edit_income_form.november = income.november
+        edit_income_form.december = income.december
+        edit_income_form.current = income.current
+
+        // Initialize formatted fields
+        formattedFields.continuing = formatWithCommas(edit_income_form.continuing);
+        formattedFields.january = formatWithCommas(edit_income_form.january);
+        formattedFields.february = formatWithCommas(edit_income_form.february);
+        formattedFields.march = formatWithCommas(edit_income_form.march);
+        formattedFields.april = formatWithCommas(edit_income_form.april);
+        formattedFields.may = formatWithCommas(edit_income_form.may);
+        formattedFields.june = formatWithCommas(edit_income_form.june);
+        formattedFields.july = formatWithCommas(edit_income_form.july);
+        formattedFields.august = formatWithCommas(edit_income_form.august);
+        formattedFields.september = formatWithCommas(edit_income_form.september);
+        formattedFields.october = formatWithCommas(edit_income_form.october);
+        formattedFields.november = formatWithCommas(edit_income_form.november);
+        formattedFields.december = formatWithCommas(edit_income_form.december);
+        formattedFields.current = formatWithCommas(edit_income_form.current);
+
+        edit_income_dialog.value = true
+    }
+}
+
+const update_income = () => {
+    // console.log(edit_income_form)
+    edit_income_form.put(route('income.update', edit_income_form.income_id), {
+        onSuccess: () => {
+            edit_income_dialog.value = false
+        },
+    })
+}
+// end edit income
+
+// format the numbers to be displayed on the table
+function formatCurrency(value) {
+  if (value === null || value === undefined || value === "") return "";
+  return Number(value).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+// end
+
+useFlashWatcher('income.display')
 </script>
 
 <template>
@@ -61,12 +327,12 @@ const submit = () => {
                                 <v-btn
                                     v-if="!$vuetify.display.smAndDown"
                                     class="ms-2 text-none tracking-normal"
-                                    prepend-icon="mdi-plus"
+                                    prepend-icon="mdi-import"
                                     rounded="l"
-                                    text="Add New Record"
+                                    text="Import Enterprises"
                                     variant="flat"
                                     color="green-darken-4"
-                                    @click="add_new_dialog = true"
+                                    @click="import_enterprises_dialog = true"
                                 ></v-btn>
 
                                 <!-- Icon-only button for small devices -->
@@ -76,55 +342,67 @@ const submit = () => {
                                     icon
                                     variant="flat"
                                     color="green-darken-4"
-                                    @click="add_new_dialog = true"
+                                    @click="import_enterprises_dialog = true"
                                 >
-                                    <v-icon size="18" class="font-weight-bold">mdi-plus</v-icon>
+                                    <v-icon size="18" class="font-weight-bold">mdi-import</v-icon>
                                 </v-btn>
                                 </div>
                             </v-card-title>
 
-                            <div class="my-3 d-flex flex-column flex-sm-row align-start align-sm-center justify-space-between gap-2">
-                                <!-- Left: Buttons -->
-                                <div class="d-flex flex-wrap gap-2">
-                                    <v-btn
-                                    class="text-none tracking-normal"
-                                    prepend-icon="mdi-file-excel"
-                                    rounded="l"
-                                    text="Download Excel"
-                                    variant="flat"
-                                    color="grey-lighten-3"
-                                    @click="generatePDF"
-                                    ></v-btn>
-                                    <v-btn
-                                    class="text-none tracking-normal"
-                                    prepend-icon="mdi-printer"
-                                    rounded="l"
-                                    text="Print PDF"
-                                    variant="flat"
-                                    color="grey-lighten-3"
-                                    @click="generatePDF"
-                                    ></v-btn>
-                                </div>
-
-                                <!-- Right: Search Field -->
-                                <v-text-field
-                                    v-model="search"
-                                    density="compact"
-                                    label="Search"
-                                    prepend-inner-icon="mdi-magnify"
-                                    variant="solo-filled"
-                                    flat
-                                    hide-details
-                                    single-line
-                                    class="border"
-                                    :style="{
-                                    minWidth: '200px',
-                                    width: $vuetify.display.smAndDown ? '100%' : '300px'
-                                    }"
-                                ></v-text-field>
+                            <div class="export-search-wrapper">
+                                <ExportSearchWrapper>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <ExportButton
+                                            :text="'Export to Excel'"
+                                            icon="mdi-file-excel"
+                                            @click="export_excel_report"
+                                        />
+                                        <ExportButton
+                                            :text="'Print to PDF'"
+                                            icon="mdi-printer"
+                                            @click="export_pdf_report"
+                                        />
+                                    </div>
+                                    <SearchBar v-model="search" />
+                                </ExportSearchWrapper>
                             </div>
 
-                            <div class="d-flex mb-4">
+
+                            <div class="filter-sort-wrapper mb-4">
+                                <div
+                                    v-if="$page.props.auth.user.role != 'User'"
+                                    class="mt-4"
+                                >
+                                    <FilterWrapper>
+                                        <SelectInput class="max-w-sm min-w-[200px]" v-model="filter.campus">
+                                            <option disabled>
+                                                Filter by Campus
+                                            </option>
+                                            <option selected value="">All Campuses</option>
+                                            <option v-for="campus in $page.props.campuses" :value="campus.id" :key="campus.id">{{ campus.campus }}</option>
+                                        </SelectInput>
+                                        <SelectInput class="max-w-sm min-w-[200px]" v-model="filter.year">
+                                            <option disabled>
+                                                Filter by Year
+                                            </option>
+                                            <option value="">All Years</option>
+                                            <option v-for="year in $page.props.years" :key="year.id" :value="year.id">
+                                                Year {{ year.year }}
+                                            </option>
+                                        </SelectInput>
+                                        <SelectInput v-model="filter.quarter" class="max-w-sm min-w-[200px]">
+                                            <option value="">All Quarters</option>
+                                            <option value="Q1">Quarter 1 (Jan–Mar)</option>
+                                            <option value="Q2">Quarter 2 (Apr–Jun)</option>
+                                            <option value="Q3">Quarter 3 (Jul–Sep)</option>
+                                            <option value="Q4">Quarter 4 (Oct–Dec)</option>
+                                        </SelectInput>
+
+                                    </FilterWrapper>
+                                </div>
+                            </div>
+
+                            <!-- <div class="d-flex mb-4">
                                 <form>
                                     <select id="income_year" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
                                         <option value="" disabled>Select Year</option>
@@ -141,159 +419,344 @@ const submit = () => {
                                         <option value="Q4" >Quarter 4</option>
                                     </select>
                                 </form>
-                            </div>
+                            </div> -->
 
                             <v-divider class="border-opacity-75" :thickness="2"></v-divider>
 
                             <v-data-table
-                                v-model:search="search" :headers="headers"
-                                :items="products" hover :loading="loading"
+                                v-model:search="search" :headers="tableHeaders"
+                                :items="filteredList" hover :loading="loading"
                             >
                                 <!-- <template v-slot:loading>
                                     <v-skeleton-loader type="table-row@5"></v-skeleton-loader>
-                                </template>
-
-                                <template v-slot:item.number="{item}">
-                                    <div class="text-start">{{ item.number }}</div>
-                                </template>
+                                </template> -->
 
                                 <template v-slot:item.enterprise="{item}">
+                                    <div class="w-[200px]">{{ item.enterprise }}</div>
+                                </template>
+
+                                <template v-slot:item.continuing="{item}">
+                                    <div class="border-[1px] w-[150px] bg-amber-50 !border-amber-500 rounded pa-4">₱{{ formatCurrency(item.continuing) }}</div>
+                                </template>
+
+                                <template v-slot:item.january="{item}">
+                                    <div class="w-[100px]">₱{{ formatCurrency(item.january) }}</div>
+                                </template>
+
+                                <template v-slot:item.february="{item}">
+                                    <div class="w-[100px]">₱{{ formatCurrency(item.february) }}</div>
+                                </template>
+
+                                <template v-slot:item.march="{item}">
+                                    <div class="w-[100px]">₱{{ formatCurrency(item.march) }}</div>
+                                </template>
+
+                                <template v-slot:item.april="{item}">
+                                    <div class="w-[100px]">₱{{ formatCurrency(item.april) }}</div>
+                                </template>
+
+                                <template v-slot:item.may="{item}">
+                                    <div class="w-[100px]">₱{{ formatCurrency(item.may) }}</div>
+                                </template>
+
+                                <template v-slot:item.june="{item}">
+                                    <div class="w-[100px]">₱{{ formatCurrency(item.june) }}</div>
+                                </template>
+
+                                <template v-slot:item.july="{item}">
+                                    <div class="w-[100px]">₱{{ formatCurrency(item.july) }}</div>
+                                </template>
+
+                                <template v-slot:item.august="{item}">
+                                    <div class="w-[100px]">₱{{ formatCurrency(item.august) }}</div>
+                                </template>
+
+                                <template v-slot:item.september="{item}">
+                                    <div class="w-[100px]">₱{{ formatCurrency(item.september) }}</div>
+                                </template>
+
+                                <template v-slot:item.october="{item}">
+                                    <div class="w-[100px]">₱{{ formatCurrency(item.october) }}</div>
+                                </template>
+
+                                <template v-slot:item.november="{item}">
+                                    <div class="w-[100px]">₱{{ formatCurrency(item.november) }}</div>
+                                </template>
+
+                                <template v-slot:item.december="{item}">
+                                    <div class="w-[100px]">₱{{ formatCurrency(item.december) }}</div>
+                                </template>
+
+                                <template v-slot:item.current="{item}">
+                                    <div :class="['border-[1px] w-[150px] rounded p-4 transition-all duration-300', quarterFilter === 'Q1' ? 'border-teal-500 bg-teal-50' : 'border-amber-500 bg-amber-50']">
+                                        ₱{{ formatCurrency(item.current) }}
+                                    </div>
+
+                                </template>
+
+                                <!-- <template v-slot:item.enterprise="{item}">
                                     <td style="width: fit-content; white-space: nowrap;">
                                         {{ item.enterprise }}
                                     </td>
                                 </template> -->
 
+                                <template v-slot:item.last_modified="{ item }">
+                                    <div class="text-start py-4 w-max inline-block">
+                                        <p class="text-xs font-bold uppercase text-gray-500">
+                                            Last Modified By
+                                        </p>
+                                        <p class="my-1">
+                                            {{ item.date }}
+                                        </p>
+                                        <p class="border-l-4 ps-1 border-emerald-600 text-xs font-bold uppercase text-emerald-600">
+                                            {{ item.updated_by }}
+                                        </p>
+                                    </div>
+                                </template>
+
+
                                 <template v-slot:item.actions="{ item }">
-                                    <td class="flex justify-end">
-                                        <!-- <v-btn variant="flat" color="info" class="mr-2 text-none" prepend-icon="mdi-eye">View</v-btn>
-                                        <v-btn variant="flat" color="error" class="mr-2 text-none" prepend-icon="mdi-delete" @click="deleteProduct">Remove</v-btn> -->
-                                        <v-btn variant="tonal" color="warning" class="mr-2"  icon="mdi-pencil" size="x-small"></v-btn>
-                                        <v-btn variant="tonal" color="error"  icon="mdi-delete" size="x-small"></v-btn>
-                                    </td>
+                                    <div class="text-end d-flex justify-end align-center gap-1">
+                                        <ActionButton @click="handle_edit_income(item.id)" :variant="'flat'" :color="'warning'" :text="'Edit'" prepend-icon="mdi-pencil" />
+                                        <ActionButton @click="handle_delete_income(item.id)" :variant="'flat'" :color="'error'" :text="'Delete'" prepend-icon="mdi-delete" />
+                                    </div>
                                 </template>
                             </v-data-table>
                         </v-card>
                     </div>
 
-                    <div>
-                        <v-dialog v-model="dialog" persistent max-width="800">
-                            <v-card prepend-icon="mdi-package" title="Add Product" class="pa-2">
-                                <v-card-text>
-                                    
-                                    
-                                    <div>
-                                        <form>
-                                            <!-- 1. Product image  -->
-                                            <div class="mb-6">
-                                                <label for="default-input" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Product image <span>(optional)</span></label>
-                                                <div class="flex items-center justify-center w-full">
-                                                    <label for="dropzone-file" class="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600">
-                                                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                                            <svg class="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                                                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
-                                                            </svg>
-                                                            <p v-if="previewUrl" class="mb-2 text-sm text-gray-500 dark:text-gray-400 font-semibold">Change uploaded image</p>
-                                                            <p v-else class="mb-2 text-sm text-gray-500 dark:text-gray-400"><span class="font-semibold">Click to upload</span> or drag and drop</p>
-                                                            <p class="text-xs text-gray-500 dark:text-gray-400">SVG, PNG, JPG or GIF (MAX. 800x400px)</p>
-                                                        </div>
-                                                        <input id="dropzone-file" type="file" class="hidden" @change="handleFileChange" accept="image/*"/>
-                                                    </label>
-                                                </div>
-                                                <div v-if="previewUrl" class="d-flex">
-                                                    <div @click="previewImageDialog = true" class="hover:cursor-pointer text-blue-500 italic mt-2 text-sm">View image preview</div>
-                                                    <div @click="previewUrl = null" class="hover:cursor-pointer text-red-500 italic mt-2 text-sm ms-4">Remove image</div>
-                                                </div>
-                                                
-                                                <v-dialog v-model="previewImageDialog" max-width="400">
-                                                    <v-card>
-                                                        <!-- Image preview -->
-                                                        <div v-if="previewUrl" height="400">
-                                                            <v-img :src="previewUrl" alt="Preview" cover></v-img>
-                                                        </div>
-                                                        <div v-else class="text-center">
-                                                            <v-empty-state
-                                                                action-text="Okay, thanks"
-                                                                image="/storage/default/no_data.svg"
-                                                                text="The system failed to preview your image. Have you uploaded it yet?"
-                                                                title="No image found"
-                                                                @click:action="previewImageDialog = false"
-                                                            ></v-empty-state>
-                                                        </div>
-                                                    </v-card>
-                                                </v-dialog> 
-                                            </div>
-
-                                            <div class="mb-2">
-                                                <v-select
-                                                    clearable
-                                                    label="Product category"
-                                                    :items="['California', 'Colorado', 'Florida', 'Georgia', 'Texas', 'Wyoming']"
-                                                    multiple
-                                                    variant="outlined"
-                                                ></v-select>
-
-                                            </div>
-
-                                            <div class="mb-2">
-                                                <v-text-field clearable label="Product name" variant="outlined" class="focus:outline-none focus:ring-0"></v-text-field>
-                                            </div>
-
-                                            <div class="mb-2">
-                                                <v-row>
-                                                    <v-col>
-                                                        <v-number-input
-                                                            :reverse="false"
-                                                            controlVariant="default"
-                                                            label="Product quantity"
-                                                            :hideInput="false"
-                                                            :inset="false"
-                                                            variant="outlined"
-                                                        ></v-number-input>
-                                                    </v-col>
-                                                    <v-col>
-                                                        <v-number-input
-                                                            :reverse="false"
-                                                            controlVariant="default"
-                                                            label="Product price"
-                                                            :hideInput="false"
-                                                            :inset="false"
-                                                            variant="outlined"
-                                                            precision="2"
-                                                        ></v-number-input>
-                                                    </v-col>
-                                                </v-row>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </v-card-text>
-                                <v-divider></v-divider>
-                                <v-card-actions>
-                                    <v-spacer></v-spacer>
-                                    <v-btn
-                                        text="Close"
-                                        variant="plain"
-                                        @click="dialog = false"
-                                    ></v-btn>
-
-                                    <v-btn
-                                        color="primary"
-                                        text="Save"
-                                        variant="tonal"
-                                        @click="addProduct"
-                                    ></v-btn>
-                                </v-card-actions>
-                            </v-card>
-                        </v-dialog>
-                    </div>
                 </div>
                 
             </div>
+
+            <!-- modals  -->
+             <div>
+                <!-- add income  -->
+                <v-dialog v-model="import_enterprises_dialog" persistent max-width="600">
+                    <v-card class="pa-8">
+                        <v-card-text>
+                            <div>
+                                <form @submit.prevent="handle_import_enterprises">
+                                    <div class="text-center">
+                                        <p class="text-2xl font-bold text-gray-600">Import existing enterprises?</p>
+                                        <p class="text-sm my-2">To add and update each enterprise's monthly income, import existing business enterprises or create new.</p>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <div>
+                                            <InputLabel for="campus_id" value="Select campus" required="true"/>
+                                            <SelectInput id="campus_id" v-model="import_enterprise_form.campus_id">
+                                                <option disabled>Select campus</option>
+                                                <option v-for="campus in $page.props.campuses" :value="campus.id" :key="campus.id">{{ campus.campus }}</option>
+                                            </SelectInput>
+                                            <InputError class="mt-2" :message="import_enterprise_form.errors.campus_id" />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div class="text-center mt-6">
+                                            <ActionButton @click="handle_redirect" class="me-2" variant="outlined" text="Add New" prepend-icon="mdi-plus" color="teal-darken-3" :disabled="import_enterprise_form.processing"/>
+                                            <ActionButton :text="import_enterprise_form.processing ? 'Importing...' : 'Import IGEs'" prepend-icon="mdi-import" color="teal-darken-3" type="submit" :loading="import_enterprise_form.processing"/>
+                                        </div>
+                                    </div>
+
+                                    <v-divider class="my-4"></v-divider>
+                                    <div class="text-end">
+                                        <v-btn
+                                            text="Close"
+                                            variant="plain"
+                                            @click="import_enterprises_dialog = false"
+                                        ></v-btn>
+
+                                        <!-- <v-btn
+                                            color="primary"
+                                            text="Save Changes"
+                                            variant="tonal"
+                                            type="submit"
+                                            :class="{ 'opacity-25': add_income_form.processing }"
+                                            :loading="add_income_form.processing"
+                                        ></v-btn> -->
+                                    </div>
+                                </form>
+                            </div>
+                        </v-card-text>
+                    </v-card>
+                </v-dialog>
+
+                <!-- add income  -->
+                <v-dialog v-model="add_income_dialog" persistent max-width="600">
+                    <v-card prepend-icon="mdi-cash-multiple" title="Add Academic Year" class="pa-2">
+                        <v-card-text>
+                            <div>
+                                <form @submit.prevent="submit">
+                                    <div class="mb-4">
+                                        <div>
+                                            <InputLabel for="year" value="Year" required="true"/>
+                                            <TextInput
+                                                id="year"
+                                                type="number"
+                                                class="mt-1 block w-full"
+                                                v-model="add_income_form.year"
+                                                autocomplete="year"
+                                                disabled
+                                            />
+                                            <InputError class="mt-2" :message="add_income_form.errors.continuing" />
+                                        </div>
+                                    </div>
+                                    <div class="mb-4">
+                                        <div>
+                                            <InputLabel for="Enterprise" value="Enterprise" required="true"/>
+                                            <SelectInput v-model="add_income_form.enterprise">
+                                                <option disabled>Import existing enterprise or add new</option>
+                                                <option v-for="enterprise in $page.props.enterprises" :key="enterprise.id" :value="enterprise.id">{{ enterprise.enterprise }}</option>
+                                                <option :value="0">Others/Add new</option>
+                                            </SelectInput>
+                                            <InputError class="mt-2" :message="add_income_form.errors.continuing" />
+                                        </div>
+                                    </div>
+                                    <div class="mb-4">
+                                        <div>
+                                            <InputLabel for="january" value="January" required="true"/>
+                                            <TextInput
+                                                id="january"
+                                                type="number"
+                                                class="mt-1 block w-full"
+                                                v-model="add_income_form.continuing"
+                                                autocomplete="year"
+                                                placeholder="Enter income for the month of January."
+                                            />
+                                            <InputError class="mt-2" :message="add_income_form.errors.continuing" />
+                                        </div>
+                                    </div>
+                                    <v-divider class="my-4"></v-divider>
+                                    <div class="text-end">
+                                        <v-btn
+                                            text="Close"
+                                            variant="plain"
+                                            @click="add_income_dialog = false"
+                                        ></v-btn>
+
+                                        <v-btn
+                                            color="primary"
+                                            text="Save Changes"
+                                            variant="tonal"
+                                            type="submit"
+                                            :class="{ 'opacity-25': add_income_form.processing }"
+                                            :loading="add_income_form.processing"
+                                        ></v-btn>
+                                    </div>
+                                </form>
+                            </div>
+                        </v-card-text>
+                    </v-card>
+                </v-dialog>
+
+                <!-- edit income  -->
+                <v-dialog v-model="edit_income_dialog" persistent max-width="600">
+                    <v-card prepend-icon="mdi-cash-multiple" title="Enter Income" class="pa-2">
+                        <v-card-text>
+                            <div>
+                                <form @submit.prevent="update_income">
+                                    <div class="mb-4">
+                                        <div>
+                                            <InputLabel for="enterprise" value="Enterprise" required="true"/>
+                                            <TextInput
+                                                id="enterprise"
+                                                type="text"
+                                                class="mt-1 block w-full"
+                                                v-model="edit_income_form.enterprise"
+                                                autocomplete="enterprise"
+                                                placeholder="Enter enterprise."
+                                                disabled
+                                            />
+                                            <!-- <InputError class="mt-2" :message="edit_income_form.errors.enterprise" /> -->
+                                        </div>
+                                    </div>
+                                    <div class="mb-4">
+                                        <div>
+                                            <InputLabel for="continuing" :value="(filter.year)-1 + ' Continuing'" required="true"/>
+                                            <TextInput
+                                                id="continuing"
+                                                type="text"
+                                                class="mt-1 block w-full"
+                                                v-model="formattedFields['continuing']"
+                                                placeholder="Enter continuing."
+                                                @input="onInput($event, 'continuing')"
+                                            />
+                                            <InputError class="mt-2" :message="edit_income_form.errors.continuing" />
+                                        </div>
+                                    </div>
+                                    <div class="mb-4" v-for="(month, index) in monthly_text_fields" :key="month.value">
+                                        <div>
+                                            <InputLabel :for="month.value" :value="month.text" required="true"/>
+                                            <TextInput
+                                                :id="month.value"
+                                                type="text"
+                                                class="mt-1 block w-full"
+                                                v-model="formattedFields[month.value]"
+                                                :placeholder="'Enter ' + month.text + ' income.'"
+                                                :disabled="index > currentMonthIndex"
+                                                @input="onInput($event, month.value)"
+                                            />
+                                            <InputError class="mt-2" :message="edit_income_form.errors[month.value]" />
+                                        </div>
+                                    </div>
+                                    <div class="mb-4">
+                                        <div>
+                                            <InputLabel for="current" :value="filter.year + ' Current'" required="true"/>
+                                            <TextInput
+                                                id="current"
+                                                type="text"
+                                                class="mt-1 block w-full"
+                                                v-model="formattedFields.current"
+                                                placeholder="Enter current income."
+                                                disabled
+                                            />
+
+                                            <!-- <InputError class="mt-2" :message="edit_income_form.errors.enterprise" /> -->
+                                        </div>
+                                    </div>
+                                    
+                                    
+                                    <v-divider class="my-4"></v-divider>
+                                    <div class="text-end">
+                                        <v-btn
+                                            text="Close"
+                                            variant="plain"
+                                            @click="edit_income_dialog = false"
+                                        ></v-btn>
+
+                                        <v-btn
+                                            color="primary"
+                                            text="Save Changes"
+                                            variant="tonal"
+                                            type="submit"
+                                            :class="{ 'opacity-25': edit_income_form.processing }"
+                                            :loading="edit_income_form.processing"
+                                        ></v-btn>
+                                    </div>
+                                </form>
+                            </div>
+                        </v-card-text>
+                    </v-card>
+                </v-dialog>
+             </div>
         </div>
     </AuthenticatedLayout>
 </template>
 
 <script>
 import Swal from 'sweetalert2';
+import ExportSearchWrapper from '@/Components/ExportSearchWrapper.vue';
+import SearchBar from '@/Components/SearchBar.vue';
+import FilterWrapper from '@/Components/FilterWrapper.vue';
+import SelectInput from '@/Components/SelectInput.vue';
+import { ref } from 'vue';
+import ExportButton from '@/Components/ExportButton.vue';
+import ActionButton from '@/Components/ActionButton.vue';
+import { useFlashWatcher } from '@/Utils/useFlashWatcher';
+import useListFilter from '@/Utils/useListFilter';
+
   export default {
     // from the database
     // props: {
@@ -345,15 +808,21 @@ import Swal from 'sweetalert2';
                 sortable: false,
             },
             {
+                title: 'Campus',
+                align: 'start',
+                key: 'campus',
+                sortable: true,
+            },
+            {
                 title: 'Enterprise',
                 align: 'start',
                 key: 'enterprise',
                 sortable: true,
             },
             {
-                title: new Date().getFullYear() + ' Current',
+                title: new Date().getFullYear()-1 + ' Continuing',
                 align: 'center',
-                key: 'current',
+                key: 'continuing',
                 sortable: true,
             },
             {
@@ -429,10 +898,16 @@ import Swal from 'sweetalert2';
                 sortable: true,
             },
             {
-                title: 'Total',
+                title: new Date().getFullYear() + ' Current',
                 align: 'center',
-                key: 'overall_total',
+                key: 'current',
                 sortable: true,
+            },
+            {
+                title: 'Last Modified',
+                align: 'center',
+                key: 'last_modified',
+                sortable: false,
             },
             {
                 title: 'Actions',
@@ -503,18 +978,6 @@ import Swal from 'sweetalert2';
         }
     },
     methods: {
-        handleFileChange(event) {
-            const file = event.target.files[0]
-            if (file && file.type.startsWith('image/')) {
-                const reader = new FileReader()
-                reader.onload = (e) => {
-                this.previewUrl = e.target.result
-                }
-                reader.readAsDataURL(file)
-            } else {
-                this.previewUrl = null
-            }
-        },
         updateTableHeaders() {
             switch (this.selectedQuarter) {
                 case 'Q1':
@@ -608,46 +1071,6 @@ import Swal from 'sweetalert2';
                     break;
             }
         },
-        addProduct(){
-            // add ajax processing here
-            this.dialog = false;
-            Swal.fire({
-                title: "Good job!",
-                text: "You clicked the button!",
-                icon: "success"
-            });
-        },
-        deleteProduct(){
-            Swal.fire({
-                title: "Are you sure?",
-                text: "You won't be able to revert this!",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonColor: "#3085d6",
-                cancelButtonColor: "#d33",
-                confirmButtonText: "Yes, delete it!",
-                didOpen: () => {
-                    const confirmBtn = Swal.getConfirmButton();
-                    const cancelBtn = Swal.getCancelButton();
-                    if (confirmBtn) confirmBtn.style.color = "white";
-                    if (cancelBtn) cancelBtn.style.color = "white";
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire({
-                        title: "Deleted!",
-                        text: "Your file has been deleted.",
-                        icon: "success",
-                        didOpen: () => {
-                            const confirmBtn = Swal.getConfirmButton();
-                            const cancelBtn = Swal.getCancelButton();
-                            if (confirmBtn) confirmBtn.style.color = "white";
-                            if (cancelBtn) cancelBtn.style.color = "white";
-                        }
-                    });
-                }
-            });
-        }
     }
   }
 </script>

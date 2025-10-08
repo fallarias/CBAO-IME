@@ -1,26 +1,41 @@
+<script setup>
+const props = defineProps({
+    remark: {
+        type: Array,
+        default: null,
+    },
+});
+</script>
+
 <template>
-    <div class="text-center text-xs text-disabled mb-3">Oct. 2, 2025 11:40 AM</div>
-    <div class="flex items-start gap-2.5">
-        <img
-            class="w-8 h-8 rounded-full"
-            :src="`/storage/uploads/avatar/${$page.props.auth.user.avatar}`"
-            alt="Jese image"
-        />
-        <div
-            class="flex flex-col w-full max-w-[320px] leading-1.5 px-4 py-2 border-gray-200 bg-gray-100 rounded-e-xl rounded-es-xl"
-        >
-            <div class="flex items-center space-x-2 rtl:space-x-reverse">
-                <span
-                    class="text-sm font-semibold text-gray-900"
-                    >Bonnie Green</span
-                >
-            </div>
-            <p class="text-sm font-normal py-2.5 text-gray-900">
-                That's awesome. I think our users will really appreciate the
-                improvements.
-            </p>
-        </div>
-        <button
+    <!-- <div class="text-center text-xs text-disabled mb-3">Oct. 2, 2025 11:40 AM</div> -->
+     <div class="text-center text-sm text-gray-500 my-3" v-if="props.remark.length === 0">
+        There are no remarks for this proposal. 
+     </div>
+     <div  v-else>
+
+         <div v-for="(remark, index) in props.remark" :key="index" class="flex items-start gap-2.5 my-2">
+             <img
+                 class="w-8 h-8 rounded-full"
+                 :src="`/storage/uploads/avatar/${remark.remarked_by_avatar}`"
+                 alt="Jese image"
+             />
+             <div
+                 class="flex flex-col w-full max-w-[320px] leading-1.5 px-4 py-2 border-gray-200 bg-gray-100 rounded-e-xl rounded-es-xl"
+             >
+                 <div class="flex items-center space-x-2 rtl:space-x-reverse">
+                     <span
+                         class="text-sm font-semibold text-gray-900"
+                         >{{ remark.remarked_by }}</span
+                     >
+                 </div>
+                 <p class="text-sm font-normal py-2.5 text-gray-900">
+                     {{ remark.remark }}
+                 </p>
+                 <span class="text-xs font-normal text-gray-500 dark:text-gray-400">{{ remark.remark_date }}</span>
+             </div>
+     </div>
+        <!-- <button
             id="dropdownMenuIconButton"
             data-dropdown-toggle="dropdownDots"
             data-dropdown-placement="bottom-start"
@@ -83,7 +98,10 @@
                     >
                 </li>
             </ul>
-        </div>
+        </div> -->
     </div>
+
+    
+    
     <slot />
 </template>

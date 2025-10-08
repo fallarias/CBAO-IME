@@ -32,7 +32,7 @@
                         </SecondaryButtonWithIconTonalVariant>
                     </div>
                     <div>
-                        <LogoutButton :href="route('logout')" method="post" as="button">
+                        <LogoutButton @click="handle_logout" as="button">
                             <v-icon icon="mdi-logout" class="mr-3"></v-icon>
                             Logout
                         </LogoutButton>
@@ -46,7 +46,8 @@
 <script setup>
 import LogoutButton from '@/Components/LogoutButton.vue';
 import SecondaryButtonWithIconTonalVariant from '@/Components/SecondaryButtonWithIconTonalVariant.vue';
-
+import Swal from 'sweetalert2';
+import { router } from '@inertiajs/vue3';
 
 const props = defineProps({
     name: {
@@ -60,4 +61,23 @@ const props = defineProps({
         type: String
     }
 });
+
+const handle_logout = () => {
+    Swal.fire({
+        title: 'Logging you out...',
+        text: 'Please wait a moment.',
+        icon: 'info',
+        showConfirmButton: false,
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading()
+            router.post(route('logout'), {}, {
+                onFinish: () => {
+                    Swal.close() // ✅ close Swal once logout request finishes
+                }
+            })
+        }
+    })
+    
+};
 </script>

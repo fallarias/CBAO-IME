@@ -1,3 +1,5 @@
+
+
 <template>
   <v-row>
     <v-col cols="12">
@@ -29,23 +31,33 @@ export default {
   components: {
     Bar, Line
   },
+
+  // ✅ Define props here
+  props: {
+    chartTitle: {
+      type: String,
+      default: 'Monthly Income'
+    },
+    chartData: {
+      type: Array as () => number[],
+    },
+    chartLabels: {
+      type: Array as () => string[],
+    },
+    chartColor: {
+      type: Array as () => string[],
+    }
+  },
+
   data() {
     return {
       data: {
-        labels: ['Echague', 'Cauayan', 'Cabagan', 'Ilagan', 'Roxas', 'Angadanan', 'Jones'],
+        labels: this.chartLabels,
         datasets: [
           { 
-            label: 'Monthly Income',  // This label appears in the chart legend, no icon is needed
-            backgroundColor: [
-              '#f87979',  // Echague
-              '#42a5f5',  // Cauayan
-              '#66bb6a',  // Cabagan
-              '#ffeb3b',  // Ilagan
-              '#ff7043',  // Roxas
-              '#8e24aa',  // Angadanan
-              '#26c6da'   // Jones
-            ],
-            data: [20381, 38602, 29705, 54398, 34678, 67594, 54637]
+            label: this.chartTitle,
+            backgroundColor: this.chartColor,
+            data: this.chartData
           }
         ]
       },
@@ -56,10 +68,9 @@ export default {
           legend: {
             labels: {
               generateLabels: (chart) => {
-                // Return a custom label without any icons
                 return chart.data.labels.map((label, i) => ({
-                  text: label,  // Only show the label text
-                  fillStyle: chart.data.datasets[0].backgroundColor[i],  // Use corresponding colors
+                  text: label,
+                  fillStyle: chart.data.datasets[0].backgroundColor[i],
                   hidden: false,
                   lineWidth: 0,
                   strokeStyle: ''
@@ -68,8 +79,9 @@ export default {
             }
           }
         }
-      }
+      },
     }
   }
 }
 </script>
+

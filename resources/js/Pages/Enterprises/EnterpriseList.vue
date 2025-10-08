@@ -1,12 +1,22 @@
 <script setup>
 import Breadcrumbs from '@/Components/Breadcrumbs.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, usePage } from '@inertiajs/vue3';
 import EnterpriseOverview from './Partials/EnterpriseOverview.vue';
 import EnterpriseDataTable from './Partials/EnterpriseDataTable.vue';
 import { ref } from 'vue';
+import SelectInput from '@/Components/SelectInput.vue';
+
+const page = usePage();
 
 const sort_category = ref("all");
+
+// filtering
+const filter = ref({
+  campus: '',
+})
+
+const enterprises_list = ref(page.props.all_enterprises)
 </script>
 
 <template>
@@ -24,9 +34,18 @@ const sort_category = ref("all");
                 </div>
 
                 <!-- enterprise overview  -->
-                 <div class="mb-12">
-                    <p class="font-bold text-xl mb-2">Overview</p>
-                    <!-- <EnterpriseOverview></EnterpriseOverview> -->
+                 <!-- <div class="mb-12">
+                    <p v-if="$page.props.auth.user.role == 'User'" class="font-bold text-xl mb-2">Overview</p>
+                    <div v-else class="flex align-center justify-between">
+                        <p class="font-bold text-xl">Overview</p>
+                        <SelectInput class="max-w-sm min-w-[100px]" v-model="filter.campus">
+                            <option disabled>
+                                Filter by Campus
+                            </option>
+                            <option selected value="">All Campuses</option>
+                            <option v-for="campus in $page.props.campuses" :value="campus.id" :key="campus.id">{{ campus.campus }}</option>
+                        </SelectInput>
+                    </div>
 
                     <div>
                         <v-row dense>
@@ -77,7 +96,7 @@ const sort_category = ref("all");
                             </v-col>
                         </v-row>
                     </div>
-                 </div>
+                 </div> -->
 
 
                  <!-- <v-skeleton-loader type="table" class="border-2"></v-skeleton-loader> -->

@@ -13,11 +13,14 @@ return new class extends Migration
     {
         Schema::create('inventories', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('enterprise_id')->constrained()->onDelete('cascade');
-            $table->foreignId('campus_id')->constrained()->onDelete('cascade');
-            $table->decimal('price', 10, 2);
-            $table->enum('unit', ['pc', 'kg', 'm', 'l']);
-            $table->enum('status', ['Available', 'Not Available'])->default('Available');
+            $table->string('image')->default('product_placeholder.jpg');
+            $table->bigInteger('campus_id')->unsigned()->nullable();
+            $table->foreign('campus_id')->references('id')->on('campuses');
+            $table->bigInteger('enterprise_id')->unsigned()->nullable();
+            $table->foreign('enterprise_id')->references('id')->on('enterprises');
+            $table->decimal('price', 10, 2)->nullable();
+            $table->enum('unit', ['pc', 'kg', 'm', 'l'])->nullable();
+            $table->enum('status', ['Available', 'Not Available'])->default('Available')->nullable();
             $table->timestamps();
         });
     }

@@ -55,6 +55,9 @@ const user_name = {
               <NavLink :href="route('categories.display')" :active="route().current('categories.display')" :icon="`mdi-label-multiple`">
                   <v-list-item-title class="navigation" role="link">Categories</v-list-item-title>
               </NavLink>
+              <NavLink :href="route('years.display')" :active="route().current('years.display')" :icon="`mdi-label-multiple`">
+                  <v-list-item-title class="navigation" role="link">Years</v-list-item-title>
+              </NavLink>
               <NavLink :href="route('uacs.display')" :active="route().current('uacs.display')" :icon="`mdi-label-multiple`">
                   <v-list-item-title class="navigation" role="link">UACS Code</v-list-item-title>
               </NavLink>

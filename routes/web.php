@@ -12,6 +12,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\UacsController;
+use App\Http\Controllers\YearController;
 use App\Models\Proposal;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Application;
@@ -59,6 +60,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/categories', 'display')->name('categories.display');
     });
 
+    Route::controller(YearController::class)->group(function(){
+        Route::get('/years', 'display')->name('years.display');
+        Route::post('/years', 'store')->name('years.store');
+        Route::put('/years/{id}', 'update')->name('years.update');
+    });
+
     Route::controller(EnterpriseController::class)->group(function(){
         Route::get('/enterprises', 'display')->name('enterprises.display');
         Route::post('/enterprises', 'store')->name('enterprises.store');
@@ -76,6 +83,8 @@ Route::middleware('auth')->group(function () {
     Route::controller(InventoryController::class)->group(function(){
         Route::get('/inventory', 'display')->name('inventory.display');
         Route::post('/inventory', 'store')->name('inventory.store');
+        Route::put('/inventory/{id}', 'update')->name('inventory.update');
+        Route::post('/inventory/import', 'import')->name('inventory.import');
     });
 
     Route::controller(InventoryController::class)->group(function(){
@@ -84,6 +93,9 @@ Route::middleware('auth')->group(function () {
 
     Route::controller(IncomeController::class)->group(function(){
         Route::get('/income', 'display')->name('income.display');
+        Route::post('/income', 'store')->name('income.store');
+        Route::put('/income/{id}', 'update')->name('income.update');
+        Route::post('/income/import', 'import')->name('income.import');
     });
 
     Route::controller(IncomeController::class)->group(function(){
@@ -101,6 +113,9 @@ Route::middleware('auth')->group(function () {
     Route::controller(ProposalController::class)->group(function(){
         Route::get('/proposals', 'display')->name('proposal.display');
         Route::post('/proposals', 'store')->name('proposal.store');
+        Route::post('/proposals/{id}', 'update')->name('proposal.update');
+        Route::put('/proposals/{id}/evaluate', 'evaluate')->name('proposal.evaluate');
+        Route::post('/proposals/{id}/remark', 'add_remark')->name('proposal.add_remark');
     });
 
     Route::middleware(['auth'])->get('/proposals/view/{filename}', function ($filename) {

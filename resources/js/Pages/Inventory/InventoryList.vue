@@ -1,7 +1,7 @@
 <script setup>
 import Breadcrumbs from '@/Components/Breadcrumbs.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -164,27 +164,107 @@ const generatePDF = async () => {
 }
 
 // success or error alert - swal
-watch(
-  () => page.props.flash,
-  (flash) => {
-    if (flash?.success) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Success',
-        text: flash.success,
-        confirmButtonColor: '#3085d6'
-      })
-    } else if (flash?.error) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: flash.error,
-        confirmButtonColor: '#d33'
-      })
+// watch(
+//   () => page.props.flash,
+//   (flash) => {
+//     if (flash?.success) {
+//       Swal.fire({
+//         icon: 'success',
+//         title: 'Success',
+//         text: flash.success,
+//         confirmButtonColor: '#3085d6',
+//         didOpen: () => {
+//           const confirmBtn = Swal.getConfirmButton()
+//           if (confirmBtn) confirmBtn.style.color = "white" // ✅ custom text color
+//         }
+//       })
+//     } else if (flash?.error) {
+//       Swal.fire({
+//         icon: 'error',
+//         title: 'Error',
+//         text: flash.error,
+//         confirmButtonColor: '#d33',
+//         didOpen: () => {
+//           const confirmBtn = Swal.getConfirmButton()
+//           if (confirmBtn) confirmBtn.style.color = "white" // ✅ custom text color
+//         }
+//       })
+//     }
+//   },
+//   { immediate: true }
+// )
+
+//
+
+// edit inventory
+const edit_inventory_dialog = ref(false);
+const edit_inventory_form = useForm({
+    id: '',
+    enterprise_name: '',
+    quantity: 0,
+    price: 0.00,
+    unit: '',
+    enterprise_status: ''
+});
+
+const handle_edit_inventory = (id) => {
+    const inventory = page.props.inventories.find(inv => inv.id === id);
+    if (inventory) {
+        edit_inventory_form.id = inventory.id;
+        edit_inventory_form.enterprise_name = inventory.enterprise_name;
+        edit_inventory_form.quantity = inventory.quantity;
+        edit_inventory_form.price = inventory.price;
+        edit_inventory_form.unit = inventory.unit;
+        edit_inventory_form.enterprise_status = inventory.enterprise_status;
+        edit_inventory_dialog.value = true; // Open dialog
     }
-  },
-  { immediate: true }
-)
+};
+
+const update_inventory = () => {
+    // console.log(edit_inventory_form)
+    edit_inventory_form.put(route('inventory.update', edit_inventory_form.id), {
+        onSuccess: () => {
+            edit_inventory_form.reset()
+            edit_inventory_dialog.value = false // Close dialog
+        },
+    });
+};
+
+// filtering
+const filter = ref({
+  campus: '',
+  status: 'Available',
+  unit: ''
+})
+// end of filtering
+
+// import existing iges
+const import_enterprises_dialog = ref(false);
+const is_importing = ref(false);
+const import_progress = ref(0);
+
+const import_enterprise_form = useForm({
+    campus_id: page.props.auth.user.campus.id
+})
+
+const handle_import_enterprises = () => {
+
+    // Trigger backend route (Laravel: route('inventory.import'))
+    import_enterprise_form.post(route("inventory.import"), {
+        onSuccess: () => {
+            import_enterprises_dialog.value = false;
+        },
+    });
+
+    // console.log(import_enterprise_form)
+};
+
+const handle_redirect = () => {
+    router.get(route('enterprises.display'));
+};
+// end import existing iges
+
+useFlashWatcher("inventory.display")
 </script>
 
 <template>
@@ -226,12 +306,12 @@ watch(
                                 <v-btn
                                     v-if="!$vuetify.display.smAndDown"
                                     class="ms-2 text-none tracking-normal"
-                                    prepend-icon="mdi-plus"
+                                    prepend-icon="mdi-import"
                                     rounded="l"
-                                    text="Add New Record"
+                                    text="Import Enterprises"
                                     variant="flat"
                                     color="green-darken-4"
-                                    @click="add_new_dialog = true"
+                                    @click="import_enterprises_dialog = true"
                                 ></v-btn>
 
                                 <!-- Icon-only button for small devices -->
@@ -248,45 +328,74 @@ watch(
                                 </div>
                             </v-card-title>
 
-                            <div class="my-3 d-flex flex-column flex-sm-row align-start align-sm-center justify-space-between gap-2">
-                                <!-- Left: Buttons -->
-                                <div class="d-flex flex-wrap gap-2">
-                                    <v-btn
-                                    class="text-none tracking-normal"
-                                    prepend-icon="mdi-file-excel"
-                                    rounded="l"
-                                    text="Download Excel"
-                                    variant="flat"
-                                    color="grey-lighten-3"
-                                    @click="generatePDF"
-                                    ></v-btn>
-                                    <v-btn
-                                    class="text-none tracking-normal"
-                                    prepend-icon="mdi-printer"
-                                    rounded="l"
-                                    text="Print PDF"
-                                    variant="flat"
-                                    color="grey-lighten-3"
-                                    @click="generatePDF"
-                                    ></v-btn>
-                                </div>
+                            <div class="export-search-wrapper">
+                                <ExportSearchWrapper>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <ExportButton
+                                            :text="'Export to Excel'"
+                                            icon="mdi-file-excel"
+                                            @click="export_excel_report"
+                                        />
+                                        <ExportButton
+                                            :text="'Print to PDF'"
+                                            icon="mdi-printer"
+                                            @click="export_pdf_report"
+                                        />
+                                    </div>
+                                    <SearchBar v-model="search" />
+                                </ExportSearchWrapper>
+                            </div>
 
-                                <!-- Right: Search Field -->
-                                <v-text-field
-                                    v-model="search"
-                                    density="compact"
-                                    label="Search"
-                                    prepend-inner-icon="mdi-magnify"
-                                    variant="solo-filled"
-                                    flat
-                                    hide-details
-                                    single-line
-                                    class="border"
-                                    :style="{
-                                    minWidth: '200px',
-                                    width: $vuetify.display.smAndDown ? '100%' : '300px'
-                                    }"
-                                ></v-text-field>
+
+                            <div class="filter-sort-wrapper mb-4">
+                                <div
+                                    
+                                    class="mt-4"
+                                >
+                                    <FilterWrapper>
+                                        <SelectInput v-if="$page.props.auth.user.role != 'User'" class="max-w-sm min-w-[200px]" v-model="filter.campus">
+                                            <option disabled>
+                                                Filter by Campus
+                                            </option>
+                                            <option selected value="">All Campuses</option>
+                                            <option v-for="campus in $page.props.campuses" :value="campus.id" :key="campus.id">{{ campus.campus }}</option>
+                                        </SelectInput>
+                                        <SelectInput class="max-w-sm min-w-[200px]" v-model="filter.category">
+                                            <option disabled>
+                                                Filter by Status
+                                            </option>
+                                            <option value="" selected>
+                                                All Status
+                                            </option>
+                                            <option value="Available">
+                                                Available
+                                            </option>
+                                            <option value="Not Available">
+                                                Not Available
+                                            </option>
+                                        </SelectInput>
+                                        <SelectInput class="max-w-sm min-w-[200px]" v-model="filter.unit">
+                                            <option disabled>
+                                                Filter by Unit
+                                            </option>
+                                            <option value="" selected>
+                                                All Unit
+                                            </option>
+                                            <option value="pc">
+                                                pc (piece/pieces)
+                                            </option>
+                                            <option value="kg">
+                                                kg (kilo/kilogram)
+                                            </option>
+                                            <option value="m">
+                                                m (meter/meters)
+                                            </option>
+                                            <option value="l">
+                                                l (liter/liters)
+                                            </option>
+                                        </SelectInput>
+                                    </FilterWrapper>
+                                </div>
                             </div>
 
                             <v-divider class="border-opacity-75" :thickness="2"></v-divider>
@@ -312,6 +421,10 @@ watch(
                                             cover
                                         ></v-img>
                                     </div>
+                                </template>
+
+                                <template v-slot:item.campus="{item}">
+                                    <div>{{ item.campus.name }}</div>
                                 </template>
 
                                 <template v-slot:item.quantity="{item}">
@@ -343,8 +456,12 @@ watch(
                                     <div class="text-end">
                                         <!-- <v-btn variant="flat" color="warning" class="mr-2 text-none" prepend-icon="mdi-pencil">Edit</v-btn>
                                         <v-btn variant="flat" color="error" class="mr-2 text-none" prepend-icon="mdi-delete" @click="deleteProduct">Delete</v-btn> -->
-                                        <v-btn variant="tonal" color="warning" class="mr-2"  icon="mdi-pencil" size="x-small" @click="edit_enterprise(item.number-1)"></v-btn>
-                                        <v-btn variant="tonal" color="error"  icon="mdi-delete" size="x-small"></v-btn>
+                                        <!-- <v-btn variant="tonal" color="warning" class="mr-2"  icon="mdi-pencil" size="x-small" @click="edit_enterprise(item.number-1)"></v-btn>
+                                        <v-btn variant="tonal" color="error"  icon="mdi-delete" size="x-small"></v-btn> -->
+                                        <div class="text-end d-flex justify-end align-center gap-1">
+                                            <ActionButton @click="handle_edit_inventory(item.id)" :variant="'flat'" :color="'warning'" :text="'Edit'" prepend-icon="mdi-pencil" />
+                                            <!-- <ActionButton @click="handle_delete_inventory(item.id)" :variant="'flat'" :color="'error'" :text="'Delete'" prepend-icon="mdi-delete" /> -->
+                                        </div>
                                     </div>
                                 </template>
                             </v-data-table>
@@ -352,6 +469,57 @@ watch(
                     </div>
 
                     <div>
+                        <!-- import dialog  -->
+                        <v-dialog v-model="import_enterprises_dialog" persistent max-width="600">
+                            <v-card class="pa-8">
+                                <v-card-text>
+                                    <div>
+                                        <form @submit.prevent="handle_import_enterprises">
+                                            <div class="text-center">
+                                                <p class="text-2xl font-bold text-gray-600">Import existing enterprises?</p>
+                                                <p class="text-sm my-2">To add and update each enterprise's monthly income, import existing business enterprises or create new.</p>
+                                            </div>
+
+                                            <div class="mb-4">
+                                                <div>
+                                                    <InputLabel for="campus_id" value="Select campus" required="true"/>
+                                                    <SelectInput id="campus_id" v-model="import_enterprise_form.campus_id">
+                                                        <option disabled>Select campus</option>
+                                                        <option v-for="campus in $page.props.campuses" :value="campus.id" :key="campus.id">{{ campus.campus }}</option>
+                                                    </SelectInput>
+                                                    <InputError class="mt-2" :message="import_enterprise_form.errors.campus_id" />
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <div class="text-center mt-6">
+                                                    <ActionButton @click="handle_redirect" class="me-2" variant="outlined" text="Add New" prepend-icon="mdi-plus" color="teal-darken-3" :disabled="import_enterprise_form.processing"/>
+                                                    <ActionButton :text="import_enterprise_form.processing ? 'Importing...' : 'Import IGEs'" prepend-icon="mdi-import" color="teal-darken-3" type="submit" :loading="import_enterprise_form.processing"/>
+                                                </div>
+                                            </div>
+
+                                            <v-divider class="my-4"></v-divider>
+                                            <div class="text-end">
+                                                <v-btn
+                                                    text="Close"
+                                                    variant="plain"
+                                                    @click="import_enterprises_dialog = false"
+                                                ></v-btn>
+
+                                                <!-- <v-btn
+                                                    color="primary"
+                                                    text="Save Changes"
+                                                    variant="tonal"
+                                                    type="submit"
+                                                    :class="{ 'opacity-25': add_income_form.processing }"
+                                                    :loading="add_income_form.processing"
+                                                ></v-btn> -->
+                                            </div>
+                                        </form>
+                                    </div>
+                                </v-card-text>
+                            </v-card>
+                        </v-dialog>
                         <!-- add or import product  -->
                         <v-dialog v-model="add_new_dialog" persistent max-width="600">
                             <v-card prepend-icon="mdi-cash-multiple" title="Import or Add New" class="pa-2">
@@ -436,6 +604,126 @@ watch(
                                                     type="submit"
                                                     :class="{ 'opacity-25': add_new_form.processing }"
                                                     :disabled="add_new_form.processing"
+                                                ></v-btn>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </v-card-text>
+                            </v-card>
+                        </v-dialog>
+
+                        <!-- add or import product  -->
+                        <v-dialog v-model="edit_inventory_dialog" persistent max-width="600">
+                            <v-card prepend-icon="mdi-pencil" title="Edit Inventory" class="pa-2">
+                                <v-card-text>
+                                    <div>
+                                        <form @submit.prevent="update_inventory">
+                                            <div class="mb-4">
+                                                <InputLabel for="enterprise" value="Enterprise" required="true"/>
+                                                <TextInput id="enterprise" type="text" class="w-full" v-model="edit_inventory_form.enterprise_name" disabled/>
+                                            </div>
+
+                                            <div class="mb-4">
+                                                <InputLabel for="price" value="Price" required="true"/>
+                                                <TextInput id="price" type="text" class="w-full" v-model="edit_inventory_form.price"/>
+                                                <InputError class="mt-2" :message="edit_inventory_form.errors.price" />
+                                            </div>
+
+                                            <div class="mb-4 d-flex justify-between align-center gap-4">
+                                                <div class="w-full">
+                                                    <InputLabel for="quantity" value="Quantity" required="true"/>
+                                                    <TextInput id="quantity" type="text" class="w-full" v-model="edit_inventory_form.quantity"/>
+                                                    <InputError class="mt-2" :message="edit_inventory_form.errors.quantity" />
+                                                </div>
+                                                <div class="w-full">
+                                                    <InputLabel for="unit" value="Unit" required="true"/>
+                                                    <SelectInput id="unit" v-model="edit_inventory_form.unit">
+                                                        <option disabled value="">-- Select unit --</option>
+                                                        <option value="pc">pc/s (piece/pieces)</option>
+                                                        <option value="kg">kg (kilogram)</option>
+                                                        <option value="m">m (meter)</option>
+                                                        <option value="l">l (liter)</option>
+                                                    </SelectInput>
+                                                </div>
+                                            </div>
+                                            <div class="w-full">
+                                                    <InputLabel for="status" value="Status" required="true"/>
+                                                    <SelectInput id="status" v-model="edit_inventory_form.enterprise_status">
+                                                        <option disabled value="">-- Select status --</option>
+                                                        <option value="Available">Available</option>
+                                                        <option value="Not Available">Not Available</option>
+                                                    </SelectInput>
+                                                    <InputError class="mt-2" :message="edit_inventory_form.errors.enterprise_status" />
+                                                </div>
+
+                                            <!-- <div class="mb-4" v-if="add_new_form.enterprise_id === 0">
+                                                <div class="mb-4">
+                                                    <label for="enterprise_name" class="block mb-2 text-sm font-medium text-gray-900">Business Enterprise <span class="text-red-500">*</span></label>
+                                                    <input type="text" id="enterprise_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" placeholder="Enter business enterprise." v-model="add_new_form.enterprise_name"/>
+
+                                                    <InputError class="mt-2" :message="add_new_form.errors.enterprise_name" />
+                                                </div>
+
+                                                <div class="mb-4">
+                                                    <label for="enterprise_category" class="block mb-2 text-sm font-medium text-gray-900">Category <span class="text-red-500">*</span></label>
+                                                    <select id="enterprise_category" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" v-model="add_new_form.enterprise_category">
+                                                        <option disabled selected value="">-- Select category --</option>
+                                                        <option value="Agri-based">Agri-based</option>
+                                                        <option value="Non agri-based">Non agri-based</option>
+                                                    </select>
+                                                    <InputError class="mt-2" :message="add_new_form.errors.enterprise_category" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div class="mb-4">
+                                                    <v-row>
+                                                        <v-col cols="12" :md="4" :lg="4">
+                                                            <div>
+                                                                <label for="price" class="block mb-2 text-sm font-medium text-gray-900">Price <span class="text-red-500">*</span></label>
+                                                                <input type="number" id="price" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" placeholder="Enter price." v-model="add_new_form.price"/>
+
+                                                                <InputError class="mt-2" :message="add_new_form.errors.price" />
+                                                            </div>
+                                                        </v-col>
+                                                        <v-col cols="12" :md="4" :lg="4">
+                                                            <div>
+                                                                <label for="quantity" class="block mb-2 text-sm font-medium text-gray-900">Quantity <span class="text-red-500">*</span></label>
+                                                                <input type="number" id="quantity" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" placeholder="Enter quantity." v-model="add_new_form.quantity"/>
+
+                                                                <InputError class="mt-2" :message="add_new_form.errors.quantity" />
+                                                            </div>
+                                                        </v-col>
+                                                        <v-col cols="12" :md="4" :lg="4">
+                                                            <div>
+                                                                <label for="unit" class="block mb-2 text-sm font-medium text-gray-900">Unit <span class="text-red-500">*</span></label>
+                                                                <select id="unit" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" v-model="add_new_form.unit">
+                                                                    <option disabled selected value="">-- Select unit --</option>
+                                                                    <option value="pc">pc/s (piece/pieces)</option>
+                                                                    <option value="kg">kg (kilogram)</option>
+                                                                    <option value="m">m (meter)</option>
+                                                                    <option value="l">l (liter)</option>
+                                                                </select>
+                                                                <InputError class="mt-2" :message="add_new_form.errors.unit" />
+                                                            </div>
+                                                        </v-col>
+                                                    </v-row>
+                                                </div>
+                                            </div> -->
+                                            <v-divider class="my-4"></v-divider>
+                                            <div class="text-end">
+                                                <v-btn
+                                                    text="Close"
+                                                    variant="plain"
+                                                    @click="edit_inventory_dialog = false"
+                                                ></v-btn>
+
+                                                <v-btn
+                                                    color="primary"
+                                                    text="Save"
+                                                    variant="tonal"
+                                                    type="submit"
+                                                    :class="{ 'opacity-25': edit_inventory_form.processing }"
+                                                    :loading="edit_inventory_form.processing"
                                                 ></v-btn>
                                             </div>
                                         </form>
@@ -569,6 +857,13 @@ watch(
 import Swal from 'sweetalert2';
 import { ref } from 'vue';
 import InventoryListPDF from '@/Components/PDFs/InventoryListPDF.vue';
+import ExportSearchWrapper from '@/Components/ExportSearchWrapper.vue';
+import SearchBar from '@/Components/SearchBar.vue';
+import FilterWrapper from '@/Components/FilterWrapper.vue';
+import SelectInput from '@/Components/SelectInput.vue';
+import { useFlashWatcher } from '@/Utils/useFlashWatcher';
+import ExportButton from '@/Components/ExportButton.vue';
+import ActionButton from '@/Components/ActionButton.vue';
   export default {
     // from the database
     // props: {
@@ -597,6 +892,12 @@ import InventoryListPDF from '@/Components/PDFs/InventoryListPDF.vue';
                 sortable: true,
             },
             {
+                title: 'Campus',
+                align: 'start',
+                key: 'campus',
+                sortable: true,
+            },
+            {
                 title: 'Enterprise',
                 align: 'start',
                 key: 'enterprise_name',
@@ -606,6 +907,12 @@ import InventoryListPDF from '@/Components/PDFs/InventoryListPDF.vue';
                 title: 'Quantity',
                 align: 'center',
                 key: 'quantity',
+                sortable: true,
+            },
+            {
+                title: 'Unit',
+                align: 'center',
+                key: 'unit',
                 sortable: true,
             },
             {

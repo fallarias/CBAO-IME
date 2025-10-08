@@ -21,7 +21,13 @@ return new class extends Migration
             $table->text('proposal_file');
             $table->enum('category', ['Agri-based', 'Non Agri-based'])->nullable();
             $table->enum('status', ['Approved', 'Declined', 'Pending'])->default('Pending');
+            $table->bigInteger('evaluated_by')->unsigned()->nullable();
+            $table->foreign('evaluated_by')->references('id')->on('users');
+            $table->timestamp('evaluated_at')->nullable();
             $table->timestamps();
+            $table->bigInteger('updated_by')->unsigned()->nullable();
+            $table->foreign('updated_by')->references('id')->on('users');
+            $table->timestamp('updated_at')->nullable();
         });
     }
 

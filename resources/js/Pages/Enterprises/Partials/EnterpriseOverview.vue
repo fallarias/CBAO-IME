@@ -1,3 +1,20 @@
+<script setup>
+const props = defineProps({
+  overall_total: {
+    type: Number,
+    default: 0,
+  },
+  agri_based_total: {
+    type: Number,
+    default: 0,
+  },
+  non_agri_based_total: {
+    type: Number,
+    default: 0,
+  },
+})
+</script>
+
 <template>
     <div>
         <v-row dense>
@@ -5,7 +22,7 @@
                 <v-card color="green-darken-1" variant="flat" class="px-6 py-8">
                     <v-row class="justify-center">
                         <v-col>
-                            <p class="text-6xl font-bold">145</p>
+                            <p class="text-6xl font-bold">{{ props.overall_total }}</p>
                             <p class="text-sm mt-2">Income-generating enterprises</p>
                         </v-col>
                         <v-col>
@@ -20,7 +37,7 @@
                 <v-card color="green-darken-3" variant="flat" class="px-6 py-8">
                     <v-row class="justify-center">
                         <v-col>
-                            <p class="text-6xl font-bold">68</p>
+                            <p class="text-6xl font-bold">{{ props.agri_based_total }}</p>
                             <p class="text-sm mt-2">Agri-based enterprises</p>
                         </v-col>
                         <v-col>
@@ -35,7 +52,7 @@
                 <v-card color="green-darken-4" variant="flat" class="px-6 py-8">
                     <v-row class="justify-center">
                         <v-col>
-                            <p class="text-6xl font-bold">77</p>
+                            <p class="text-6xl font-bold">{{ props.non_agri_based_total }}</p>
                             <p class="text-sm mt-2">Non agri-based enterprises</p>
                         </v-col>
                         <v-col>
