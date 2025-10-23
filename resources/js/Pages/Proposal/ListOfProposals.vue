@@ -170,9 +170,12 @@ const handle_edit_proposal_file_change = (e) => {
 };
 
 const project_file_path = ref("");
-const handle_view_project_file = (file_path, proposal_id) => {
+const selected_proposal_status = ref("")
+const handle_view_project_file = (file_path, proposal_id, proposal_status) => {
     project_file_path.value = file_path;
     remarks_proposal_id.value = proposal_id;
+    selected_proposal_status.value = proposal_status;
+
     view_project_file_dialog.value = true;
 };
 
@@ -630,7 +633,7 @@ useFlashWatcher("proposal.display");
                                     <div>
                                         <p
                                             class="hover:text-blue-500 hover:font-bold hover:underline hover:cursor-pointer text-blue-500 font-bold"
-                                            @click="handle_view_project_file(item.project_file.path, item.proposal_id)"
+                                            @click="handle_view_project_file(item.project_file.path, item.proposal_id, item.proposal_status)"
                                         >
                                             View File
                                         </p>
@@ -714,7 +717,7 @@ useFlashWatcher("proposal.display");
                                             @click="view_remarks_bubble_dialog(item.proposal_id)" density="comfortable"
                                             class="me-2 text-xs"
                                             icon="mdi-comment-outline"
-                                            
+                                            :disabled="item.proposal_status != 'Pending'"
                                         >
                                         <!-- :icon="$page.props.auth.user.role == 'User' ? 'mdi-comment-outline' : 'mdi-comment-plus-outline'" -->
                                             <!-- <div v-if="$page.props.auth.user.role == 'User'">
@@ -1103,6 +1106,7 @@ useFlashWatcher("proposal.display");
                                             @click="view_remarks_bubble_dialog(remarks_proposal_id)"
                                             class="me-2"
                                             :prepend-icon="$page.props.auth.user.role == 'User' ? 'mdi-comment-outline' : 'mdi-comment-plus-outline'"
+                                            :disabled="selected_proposal_status != 'Pending'"
                                         >
                                             <div v-if="$page.props.auth.user.role == 'User'">
                                                 View Remarks

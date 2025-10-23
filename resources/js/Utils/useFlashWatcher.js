@@ -2,8 +2,18 @@ import { watch } from "vue";
 import Swal from "sweetalert2";
 import { router, usePage } from "@inertiajs/vue3";
 
-export function useFlashWatcher(redirectRoute = null) {
+export function useFlashWatcher(redirectRoute = null, routeParams = null) {
     const page = usePage();
+
+    const redirect = () => {
+        if (redirectRoute) {
+            if (routeParams) {
+                router.get(route(redirectRoute, routeParams));
+            } else {
+                router.get(route(redirectRoute));
+            }
+        }
+    };
 
     watch(
         () => page.props.flash,
@@ -18,12 +28,8 @@ export function useFlashWatcher(redirectRoute = null) {
                         const confirmBtn = Swal.getConfirmButton();
                         if (confirmBtn) confirmBtn.style.color = "white";
                     },
-                }).then(() => {
-                    if (redirectRoute) {
-                        router.get(route(redirectRoute));
-                    }
-                });
-            } if (flash?.info) {
+                }).then(redirect);
+            } else if (flash?.info) {
                 Swal.fire({
                     icon: "info",
                     title: "Info",
@@ -33,26 +39,18 @@ export function useFlashWatcher(redirectRoute = null) {
                         const confirmBtn = Swal.getConfirmButton();
                         if (confirmBtn) confirmBtn.style.color = "white";
                     },
-                }).then(() => {
-                    if (redirectRoute) {
-                        router.get(route(redirectRoute));
-                    }
-                });
-            } if (flash?.warning) {
+                }).then(redirect);
+            } else if (flash?.warning) {
                 Swal.fire({
                     icon: "warning",
                     title: "Warning",
                     text: flash.warning,
-                    confirmButtonColor: "#3085d6",
+                    confirmButtonColor: "#f6c23e",
                     didOpen: () => {
                         const confirmBtn = Swal.getConfirmButton();
                         if (confirmBtn) confirmBtn.style.color = "white";
                     },
-                }).then(() => {
-                    if (redirectRoute) {
-                        router.get(route(redirectRoute));
-                    }
-                });
+                }).then(redirect);
             } else if (flash?.error) {
                 Swal.fire({
                     icon: "error",

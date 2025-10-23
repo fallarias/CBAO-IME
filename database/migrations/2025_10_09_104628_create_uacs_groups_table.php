@@ -11,12 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('uacs', function (Blueprint $table) {
+        Schema::create('uacs_groups', function (Blueprint $table) {
             $table->id();
-            $table->string('uacs_code')->unique();
-            $table->string('object_code');
-            $table->string('sub_object_code')->nullable();
+            $table->bigInteger('uacs_type_id')->unsigned()->nullable();
+            $table->foreign('uacs_type_id')->references('id')->on('uacs_types');
+            $table->string('name')->unique();
+            $table->string('code', 50)->unique()->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
@@ -25,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('uacs');
+        Schema::dropIfExists('uacs_groups');
     }
 };

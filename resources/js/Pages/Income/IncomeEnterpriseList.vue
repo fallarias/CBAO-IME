@@ -285,6 +285,107 @@ function formatCurrency(value) {
 }
 // end
 
+// pdf section
+const current_user = {
+  name: `${page.props.auth.user.first_name} ${page.props.auth.user.last_name}`,
+  campus: page.props.auth.user.campus.campus,
+  role: page.props.auth.user.role
+};
+
+const pdfSection = ref(null);
+const isExporting = ref(false);
+const pdf_headers = ['#', 'Campus', 'Enterprise', `${filter.value.year - 1} Continuing`, 'Jan.', 'Feb.', 'Mar.', 'Apr.', 'May', 'Jun.', 'Jul.', 'Aug.', 'Sep.', 'Oct.', 'Nov.', 'Dec.', `${filter.value.year} Current`, 'Added/Submitted By']
+
+// const column_styles = Object.fromEntries(
+//   pdf_headers.map((_, i) => [i, { cellWidth: 270 / pdf_headers.length }])
+// );
+
+const column_styles = {
+  0: { cellWidth: 8, halign: "center" },   // #
+  1: { cellWidth: 20 },                    // Campus
+  2: { cellWidth: 35 },                    // Enterprise
+  3: { cellWidth: 25, halign: "right" },   // Continuing
+  4: { cellWidth: 15, halign: "right" },   // January
+  5: { cellWidth: 15, halign: "right" },   // February
+  6: { cellWidth: 15, halign: "right" },   // March
+  7: { cellWidth: 15, halign: "right" },   // April
+  8: { cellWidth: 15, halign: "right" },   // May
+  9: { cellWidth: 15, halign: "right" },   // June
+  10: { cellWidth: 15, halign: "right" },  // July
+  11: { cellWidth: 15, halign: "right" },  // August
+  12: { cellWidth: 15, halign: "right" },  // September
+  13: { cellWidth: 15, halign: "right" },  // October
+  14: { cellWidth: 15, halign: "right" },  // November
+  15: { cellWidth: 15, halign: "right" },  // December
+  16: { cellWidth: 25, halign: "right" },  // Current
+  17: { cellWidth: 35 },                   // Added/Submitted By
+};
+
+const export_pdf_report = () => {
+  generatePDF({
+    reportTitle: "Report of Monthly Income Per Enterprise",
+    isExporting,
+    currentUser: current_user,
+    headers: pdf_headers,
+    orientation: 'l',
+    tableOptions: { columnStyles: column_styles },
+    pageSize: 'legal',
+    rows: filteredList.value.map((item, index) => [
+      index + 1,
+      item.campus,
+      item.enterprise,
+      formatCurrency(item.continuing),
+      formatCurrency(item.january),
+      formatCurrency(item.february),
+      formatCurrency(item.march),
+      formatCurrency(item.april),
+      formatCurrency(item.may),
+      formatCurrency(item.june),
+      formatCurrency(item.july),
+      formatCurrency(item.august),
+      formatCurrency(item.september),
+      formatCurrency(item.october),
+      formatCurrency(item.november),
+      formatCurrency(item.december),
+      formatCurrency(item.current),
+      `${item.updated_by} | ${item.date}`
+    ]),
+  });
+};
+// end of pdf section
+
+// excel section
+// Excel headers
+const excel_headers = ['#', 'Campus', 'Enterprise', `${filter.value.year - 1} Continuing`, 'Jan.', 'Feb.', 'Mar.', 'Apr.', 'May', 'Jun.', 'Jul.', 'Aug.', 'Sep.', 'Oct.', 'Nov.', 'Dec.', `${filter.value.year} Current`, 'Added/Submitted By'];
+
+// Export handler
+const export_excel_report = () => {
+  // Use .value because it's a computed ref
+  const excelData = filteredList.value.map((item, index) => ({
+    '#': index + 1,
+    'Campus': item.campus || '-',
+    'Enterprise': item.enterprise || '-',
+    [`${filter.value.year - 1} Continuing`]: formatCurrency(item.continuing),
+    'Jan.': formatCurrency(item.january),
+    'Feb.': formatCurrency(item.february),
+    'Mar.': formatCurrency(item.march),
+    'Apr.': formatCurrency(item.april),
+    'May': formatCurrency(item.may),
+    'Jun.': formatCurrency(item.june),
+    'Jul.': formatCurrency(item.july),
+    'Aug.': formatCurrency(item.august),
+    'Sep.': formatCurrency(item.september),
+    'Oct.': formatCurrency(item.october),
+    'Nov.': formatCurrency(item.november),
+    'Dec.': formatCurrency(item.december),
+    [`${filter.value.year} Current`]: formatCurrency(item.current),
+    'Added/Submitted By': `${item.updated_by} | ${item.date}`,
+  }));
+
+  exportExcel(excelData, excel_headers, "Monthly_Income_Report");
+};
+// end of excel section
+
 useFlashWatcher('income.display')
 </script>
 
@@ -307,12 +408,12 @@ useFlashWatcher('income.display')
                         <v-card flat>
                             <v-card-title class="d-flex align-center pe-2 justify-space-between">
                                 <!-- Left Section: Icon + Text -->
-                                <div class="d-flex align-center pe-2">
+                                <div class="d-flex align-center pe-2" @click="import_enterprises_dialog = true">
                                     <v-icon
                                         :size="$vuetify.display.smAndDown ? 18 : 24"
                                         class="me-2 font-weight-bold"
                                     >
-                                        mdi-cash-plus
+                                        mdi-import
                                     </v-icon>
                                     <span
                                         :class="$vuetify.display.smAndDown ? 'text-lg font-weight-semibold' : 'text-2xl font-weight-semibold'"
@@ -756,6 +857,8 @@ import ExportButton from '@/Components/ExportButton.vue';
 import ActionButton from '@/Components/ActionButton.vue';
 import { useFlashWatcher } from '@/Utils/useFlashWatcher';
 import useListFilter from '@/Utils/useListFilter';
+import { generatePDF } from '@/Utils/PDFGenerator';
+import { exportExcel } from '@/Utils/ExcelGenerator';
 
   export default {
     // from the database

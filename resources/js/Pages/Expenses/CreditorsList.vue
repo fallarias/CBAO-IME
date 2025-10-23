@@ -1,29 +1,104 @@
 <script setup>
 import Breadcrumbs from '@/Components/Breadcrumbs.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
+import { ref } from 'vue';
 
-const form = useForm({
-    product_name: '',
-    product_name: '',
-    product_quantity: 0,
-    product_price: 0.00,
-    product_category: '',
+const page = usePage();
+
+// add record
+const add_creditor_dialog = ref(false);
+
+const add_creditor_form = useForm({
+    expenses_id: page.props.expense_id,
+    creditor_name: '',
+    reference_date: '',
+    reference_serial_number: '',
+    utilization: 0.00,
+    disbursements: 0.00,
+    uu_due_and_demandable: 0.00,
+    uu_not_yet_due_and_demandable: 0.00,
+    check_number: '',
+    check_date: '',
+    particulars: '',
+    selected_uacs: [
+        {
+            uacs_id: '',
+            amount: 0.00
+        }
+    ],
+    total_mooe: 0.00,
+    total_co: 0.00,
 });
 
+const add_selected_uacs = () => {
+    add_creditor_form.selected_uacs.push({
+        uacs_id: '',
+        amount: 0.00,
+    });
+}
+
+const remove_selected_uacs = (index) => {
+    if (add_creditor_form.selected_uacs.length === 1) {
+        // Close the expense dialog first
+        add_creditor_dialog.value = false;
+
+        // Show alert
+        Swal.fire({
+            icon: "error",
+            title: "Cannot Remove Item",
+            text: "At least one particular must remain. You cannot remove the last item.",
+            confirmButtonText: "OK, got it",
+            confirmButtonColor: "#d33",
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            allowEnterKey: true,
+            didOpen: () => {
+                const confirmBtn = Swal.getConfirmButton();
+                if (confirmBtn) confirmBtn.style.color = "white";
+            },
+        }).then(() => {
+            // Reopen the dialog after confirmation
+            add_creditor_dialog.value = true;
+        });
+
+        return;
+    }
+
+    // 🧾 Proceed to remove the selected item
+    add_creditor_form.selected_uacs.splice(index, 1);
+}
+
 const submit = () => {
-    form.post(route('login'), {
-        onFinish: () => form.reset('password'),
+    // console.log(add_creditor_form);
+    add_creditor_form.post(route('creditors.store', page.props.expense_id), {
+        onSuccess: () => {
+            add_creditor_dialog.value = false;
+            add_creditor_form.reset();
+        },
     });
 };
+// end add record
+
+// format the numbers to be displayed on the table
+function formatCurrency(value) {
+  if (value === null || value === undefined || value === "") return "";
+  return Number(value).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+// end
+
+useFlashWatcher("creditors.display", page.props.expense_id);
 </script>
 
 <template>
-    <Head title="Expenses" />
+    <Head title="Expenses - Creditors" />
 
     <AuthenticatedLayout>
         <template #header>
@@ -39,106 +114,136 @@ const submit = () => {
                 <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg  border border-stone-200">
                     <div class="p-6 text-gray-900">
                         <v-card flat>
-                            <v-card-title class="d-flex align-center pe-2">
-                                <v-icon icon="mdi-cash-remove"></v-icon> &nbsp;
-                                Expenses
+                            <v-card-title
+                                class="d-flex align-center pe-2 justify-space-between"
+                            >
+                                <!-- Left Section: Icon + Text -->
+                                <div class="d-flex align-center pe-2">
+                                    <v-icon
+                                        :size="
+                                            $vuetify.display.smAndDown ? 18 : 24
+                                        "
+                                        class="me-2 font-weight-bold"
+                                    >
+                                        mdi-file-document-alert-outline
+                                    </v-icon>
+                                    <span
+                                        :class="
+                                            $vuetify.display.smAndDown
+                                                ? 'text-lg font-weight-semibold'
+                                                : 'text-2xl font-weight-semibold'
+                                        "
+                                    >
+                                        {{ $page.props.enterprise }} - Creditors
+                                    </span>
+                                </div>
 
-                                
+                                <!-- Right Section: Responsive Button -->
+                                <div>
+                                    <!-- Full button for medium and up -->
+                                    <v-btn
+                                        v-if="!$vuetify.display.smAndDown"
+                                        class="ms-2 text-none tracking-normal"
+                                        prepend-icon="mdi-plus"
+                                        rounded="l"
+                                        text="Add Record"
+                                        variant="flat"
+                                        color="green-darken-4"
+                                        @click="
+                                            add_creditor_dialog = true
+                                        "
+                                    ></v-btn>
 
-                                <!-- <v-spacer></v-spacer>
-
-                                <v-text-field
-                                    v-model="search"
-                                    density="compact"
-                                    label="Search"
-                                    prepend-inner-icon="mdi-magnify"
-                                    variant="solo-filled"
-                                    flat
-                                    hide-details
-                                    single-line
-                                ></v-text-field>
-
-                                <v-btn
-                                    class="ms-2 text-none tracking-normal"
-                                    prepend-icon="mdi-refresh"
-                                    rounded="l"
-                                    text="Refresh"
-                                    border
-                                    variant="tonal"
-                                    color="green-darken-4"
-                                    @click="onClick"
-                                ></v-btn>
-
-                                <v-btn
-                                    class="ms-2 text-none tracking-normal"
-                                    prepend-icon="mdi-plus"
-                                    rounded="l"
-                                    text="Add Product"
-                                    variant="flat"
-                                    color="green-darken-4"
-                                    @click="dialog = true"
-                                ></v-btn> -->
+                                    <!-- Icon-only button for small devices -->
+                                    <v-btn
+                                        v-else
+                                        class="ms-2"
+                                        icon
+                                        variant="flat"
+                                        color="green-darken-4"
+                                        @click="
+                                            add_creditor_dialog = true
+                                        "
+                                    >
+                                        <v-icon
+                                            size="18"
+                                            class="font-weight-bold"
+                                            >mdi-plus</v-icon
+                                        >
+                                    </v-btn>
+                                </div>
                             </v-card-title>
 
-                            <div class="mb-3">
-                                <v-row dense>
-                                    <v-col cols="12" md="9" lg="9">
-                                        <v-text-field
-                                            v-model="search"
-                                            density="compact"
-                                            label="Search"
-                                            prepend-inner-icon="mdi-magnify"
-                                            variant="solo-filled"
-                                            flat
-                                            hide-details
-                                            single-line class="border"
-                                        ></v-text-field>
-                                    </v-col>
-                                    <v-col cols="12" md="3" lg="3" class="text-end">
-                                        <div>
-                                            <v-btn
-                                            class="ms-2 text-none tracking-normal"
-                                            prepend-icon="mdi-refresh"
-                                            rounded="l"
-                                            text="Refresh"
-                                            border
-                                            variant="tonal"
-                                            color="green-darken-4"
-                                            @click="onClick"
-                                        ></v-btn>
-
-                                        <v-btn
-                                            class="ms-2 text-none tracking-normal"
-                                            prepend-icon="mdi-plus"
-                                            rounded="l"
-                                            text="Add New"
-                                            variant="flat"
-                                            color="green-darken-4"
-                                            @click="dialog = true"
-                                        ></v-btn>
-                                        </div>
-                                    </v-col>
-                                </v-row>
+                            <div class="export-search-wrapper">
+                                <ExportSearchWrapper>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <ExportButton
+                                            :text="'Export to Excel'"
+                                            icon="mdi-file-excel"
+                                            @click="export_excel_report"
+                                        />
+                                        <ExportButton
+                                            :text="'Print to PDF'"
+                                            icon="mdi-printer"
+                                            @click="export_pdf_report"
+                                        />
+                                    </div>
+                                    <SearchBar v-model="search" />
+                                </ExportSearchWrapper>
                             </div>
+
+                            <!-- <div class="filter-sort-wrapper mb-4">
+                                <div
+                                    v-if="$page.props.auth.user.role == 'Admin'"
+                                    class="mt-4"
+                                >
+                                    <FilterWrapper>
+                                        <SelectInput class="max-w-sm min-w-[200px]" v-model="filter.campus">
+                                            <option disabled>
+                                                Filter by Campus
+                                            </option>
+                                            <option selected value="">All Campuses</option>
+                                            <option v-for="campus in $page.props.campuses" :value="campus.id" :key="campus.id">{{ campus.campus }}</option>
+                                        </SelectInput>
+                                        <SelectInput class="max-w-sm min-w-[200px]" v-model="filter.status">
+                                            <option disabled>
+                                                Filter by Status
+                                            </option>
+                                            <option value="" selected>
+                                                All Status
+                                            </option>
+                                            <option value="Pending">
+                                                Pending
+                                            </option>
+                                            <option value="Approved">
+                                                Approved
+                                            </option>
+                                            <option value="Declined">
+                                                Declined
+                                            </option>
+                                        </SelectInput>
+                                    </FilterWrapper>
+                                </div>
+                            </div> -->
 
                             <v-divider class="border-opacity-75" :thickness="2"></v-divider>
 
-                            <v-data-table
+                            <v-data-table class="h-screen"
                                 v-model:search="search"
                                 :filter-keys="['name']" :headers="header"
-                                :items="products" hover :loading="loading" fixed-header
+                                :items="$page.props.creditors" hover :loading="loading" fixed-header
                             >
                                 <template v-slot:loading>
                                     <v-skeleton-loader type="table-row@5"></v-skeleton-loader>
                                 </template>
 
-                                <template v-slot:item.number="{item}">
-                                    <div class="text-start">{{ item.number }}</div>
+                                <template v-slot:item.number="{item, index}">
+                                    <div class="text-start">{{ index + 1 }}</div>
                                 </template>
 
                                 <template v-slot:item.creditor="{item}">
                                     <td style="width: fit-content; white-space: nowrap;">
-                                        {{ item.creditor }}
+                                        {{ item.creditor_name }}
                                     </td>
                                 </template>
 
@@ -150,7 +255,7 @@ const submit = () => {
 
                                 <template v-slot:item.serial_number="{item}">
                                     <td style="width: fit-content; white-space: nowrap;">
-                                        {{ item.serial_number }}
+                                        {{ item.reference_serial_number }}
                                     </td>
                                 </template>
 
@@ -160,36 +265,97 @@ const submit = () => {
                                     </td>
                                 </template> -->
 
-                                <template v-slot:item.uacs="{item}">
-                                    <td style="width: fit-content; white-space: nowrap;">
-                                        <v-btn variant="tonal" color="info" class="mr-2 text-none" @click="view_uacs(item)">View</v-btn>
-                                    </td>
+                                <template v-slot:item.uacs="{ item }">
+  <div class="relative group inline-block w-[180px] !overflow-visible">
+    <!-- Trigger Area -->
+    <div
+      class="border border-sky-500 bg-sky-50 rounded py-2 px-3 text-center cursor-pointer transition-all duration-200 group-hover:bg-sky-100"
+    >
+      {{ item.uacs_codes?.length ? `${item.uacs_codes.length} UACS Code(s)` : 'No UACS Data' }}
+    </div>
 
-                                    
-                                </template>
+    <!-- Hover Card -->
+    <div
+      v-if="item.uacs_codes && item.uacs_codes.length"
+      class="absolute left-1/2 top-full mt-2 z-50 hidden w-[350px] -translate-x-1/2 rounded-lg border border-gray-200 bg-white p-3 text-sm shadow-xl group-hover:block"
+    >
+      <div class="font-semibold text-gray-700 mb-2 border-b pb-1">
+        UACS Codes
+      </div>
 
-                                <template v-slot:item.particulars_date="{item}">
+      <ul class="space-y-2 max-h-[250px] overflow-y-auto">
+        <li
+          v-for="(uacs, index) in item.uacs_codes"
+          :key="index"
+          class="border-b last:border-0 pb-1"
+        >
+          <div class="flex justify-between text-gray-700">
+            <span class="font-medium truncate w-[60%]">
+              {{ uacs.uacs_code }}
+            </span>
+            <span class="text-gray-800 font-semibold">
+              ₱{{ formatCurrency(uacs.amount) }}
+            </span>
+          </div>
+          <div class="text-xs text-gray-500">
+            {{ uacs.uacs_type_name }} • {{ uacs.uacs_group_name }}
+          </div>
+          <div class="text-xs text-gray-400 italic">
+            {{ uacs.object_code }}{{ uacs.sub_object_code ? ' - ' + uacs.sub_object_code : '' }}
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</template>
+
+
+                                <template v-slot:item.check_date="{item}">
                                     <td style="width: fit-content; white-space: nowrap;">
-                                        {{ item.particulars_date }}
+                                        {{ item.check_date ?? '--' }}
                                     </td>
                                 </template>
 
                                 <template v-slot:item.check_number="{item}">
                                     <td style="width: fit-content; white-space: nowrap;">
-                                        {{ item.check_number }}
+                                        {{ item.check_number ?? '--' }}
                                     </td>
                                 </template>
 
-                                <template v-slot:item.creditors="{item}">
-                                    <div>
-                                        <Link :href="route('inventory.view', 1)" class="text-blue-darken-3 hover:font-bold hover:underline">View List</Link>
+                                <template v-slot:item.particulars="{item}">
+                                    <td style="width: fit-content; white-space: nowrap;">
+                                        {{ item.particulars ?? '--' }}
+                                    </td>
+                                </template>
+
+                                <template v-slot:item.utilization="{item}">
+                                    <div class="border-[1px] w-[150px] border-pink-500 py-2 px-4 rounded my-2 bg-pink-50">
+                                        ₱{{ formatCurrency(item.utilization) }}
+                                    </div>
+                                </template>
+
+                                <template v-slot:item.total_mooe="{item}">
+                                    <div class="border-[1px] w-[150px] border-amber-500 py-2 px-4 rounded my-2 bg-amber-50">
+                                        ₱{{ formatCurrency(item.total_mooe) }}
+                                    </div>
+                                </template>
+
+                                <template v-slot:item.total_co="{item}">
+                                    <div class="border-[1px] w-[150px] border-cyan-500 py-2 px-4 rounded my-2 bg-cyan-50">
+                                        ₱{{ formatCurrency(item.total_co) }}
+                                    </div>
+                                </template>
+
+                                <template v-slot:item.overall_total="{item}">
+                                    <div class="border-[1px] w-[150px] border-cyan-500 py-2 px-4 rounded my-2 bg-cyan-50">
+                                        ₱{{ formatCurrency(item.overall_total) }}
                                     </div>
                                 </template>
 
                                 <template v-slot:item.actions="{ item }">
                                     <td style="width: fit-content; white-space: nowrap;" class="text-end">
-                                        <v-btn variant="flat" color="info" class="mr-2 text-none" prepend-icon="mdi-eye">View</v-btn>
-                                        <v-btn variant="flat" color="error" class="mr-2 text-none" prepend-icon="mdi-delete" @click="deleteProduct">Remove</v-btn>
+                                        <!-- <v-btn variant="flat" color="info" class="mr-2 text-none" prepend-icon="mdi-eye">View</v-btn>
+                                        <v-btn variant="flat" color="error" class="mr-2 text-none" prepend-icon="mdi-delete" @click="deleteProduct">Remove</v-btn> -->
                                         <!-- <v-btn variant="tonal" color="warning" class="mr-2"  icon="mdi-pencil" size="x-small"></v-btn>
                                         <v-btn variant="tonal" color="error"  icon="mdi-delete" size="x-small"></v-btn> -->
                                     </td>
@@ -350,6 +516,184 @@ const submit = () => {
                     </div>
                 </div>
                 
+                <v-dialog v-model="add_creditor_dialog" persistent max-width="600">
+                    <v-card prepend-icon="mdi-account-alert-outline" title="Add Creditor" class="pa-2">
+                        <v-card-text>
+                            <div>
+                                <form @submit.prevent="submit">
+                                    <div class="mb-4">
+                                        <div>
+                                            <InputLabel for="name" value="Name" required="true"/>
+                                            <TextInput
+                                                id="name"
+                                                type="text"
+                                                class="mt-1 block w-full"
+                                                v-model="add_creditor_form.creditor_name"
+                                                autocomplete="creditor_name"
+                                                placeholder="Enter creditor name."
+                                            />
+                                            <InputError class="mt-2" :message="add_creditor_form.errors.creditor_name" />
+                                        </div>
+                                    </div>
+                                    <div class="mb-4 grid grid-cols-2 gap-4">
+                                        <div>
+                                            <InputLabel for="reference_date" value="Reference Date" required="true"/>
+                                            <TextInput
+                                                id="reference_date"
+                                                type="date"
+                                                class="mt-1 block w-full"
+                                                v-model="add_creditor_form.reference_date"
+                                                autocomplete="reference_date"
+                                                placeholder="Enter reference date."
+                                            />
+                                            <InputError class="mt-2" :message="add_creditor_form.errors.reference_date" />
+                                        </div>
+                                        <div>
+                                            <InputLabel for="reference_serial_number" value="Reference Serial Number" required="true"/>
+                                            <TextInput
+                                                id="reference_serial_number"
+                                                type="text"
+                                                class="mt-1 block w-full"
+                                                v-model="add_creditor_form.reference_serial_number"
+                                                autocomplete="reference_serial_number"
+                                                placeholder="Enter reference serial number."
+                                            />
+                                            <InputError class="mt-2" :message="add_creditor_form.errors.reference_serial_number" />
+                                        </div>
+                                    </div>
+                                    <div class="mb-4">
+                                        <InputLabel for="uacs_codes" value="UACS Codes" required="true"/>
+
+                                        <!-- <div>
+                                            <SelectInput>
+                                                <option disabled value="">Select UACS Type</option>
+                                                <option v-for="uacs_type in $page.props.uacs_types" :key="uacs_type.id" :value="uacs_type.id">{{ uacs_type.name }}</option>
+                                            </SelectInput>
+                                        </div>
+
+                                        <div>
+                                            <SelectInput>
+                                                <option disabled value="">Select UACS Group</option>
+                                                <option v-for="uacs_group in $page.props.uacs_groups" :key="uacs_group.id" :value="uacs_group.id">{{ uacs_group.name }}</option>
+                                            </SelectInput>
+                                        </div> -->
+
+                                        <div class="mt-1 grid grid-cols-3 gap-4 mb-4" v-for="(uacs, index) in add_creditor_form.selected_uacs" :key="index">
+                                            <SelectInput v-model="uacs.uacs_id">
+                                                <option disabled value="">Select UACS Code</option>
+                                                <option v-for="uacs in $page.props.uacs" :key="uacs.id" :value="uacs.id">[{{ uacs.uacs_type_name }}] {{ uacs.uacs_code }} ({{ uacs.object_code }} - {{ uacs.sub_object_code }})</option>
+                                            </SelectInput>
+                                            <TextInput
+                                                id="uacs_amount"
+                                                type="number"
+                                                class="mt-1 block w-full"
+                                                v-model="uacs.amount"
+                                                autocomplete="uacs_amount"
+                                                placeholder="Enter amount."
+                                            />
+                                            <div class="border-2 text-red-500 border-red-500 flex text-center justify-center align-center rounded hover:cursor-pointer hover:bg-red-50 hover:font-bold" @click="remove_selected_uacs(index)">Remove</div>
+                                        </div>
+                                        <div class="mt-4 border-2 border-teal-500 text-teal-500 text-center rounded pa-4 hover:cursor-pointer hover:bg-teal-50 hover:font-bold" @click="add_selected_uacs">Add UACS</div>
+                                    </div>
+                                    <div class="mb-4">
+                                        <InputLabel for="disbursements" value="Disbursements" />
+                                        <TextInput
+                                            id="disbursements"
+                                            type="text"
+                                            class="mt-1 block w-full"
+                                            v-model="add_creditor_form.disbursements"
+                                            autocomplete="disbursements"
+                                            placeholder="Enter disbursements."
+                                        />
+                                        <InputError class="mt-2" :message="add_creditor_form.errors.disbursements" />
+                                    </div>
+                                    <div class="mb-4 grid grid-cols-2 gap-4">
+                                        <div>
+                                            <InputLabel for="uu_due_and_demandable" value="Due and Demandable"/>
+                                            <TextInput
+                                                id="uu_due_and_demandable"
+                                                type="text"
+                                                class="mt-1 block w-full"
+                                                v-model="add_creditor_form.uu_due_and_demandable"
+                                                autocomplete="uu_due_and_demandable"
+                                                placeholder="Enter due and demandable."
+                                            />
+                                            <InputError class="mt-2" :message="add_creditor_form.errors.uu_due_and_demandable" />
+                                        </div>
+                                        <div>
+                                            <InputLabel for="uu_not_yet_due_and_demandable" value="Not Yet Due and Demandable"/>
+                                            <TextInput
+                                                id="uu_not_yet_due_and_demandable"
+                                                type="text"
+                                                class="mt-1 block w-full"
+                                                v-model="add_creditor_form.uu_not_yet_due_and_demandable"
+                                                autocomplete="uu_not_yet_due_and_demandable"
+                                                placeholder="Enter not yet due and demandable."
+                                            />
+                                            <InputError class="mt-2" :message="add_creditor_form.errors.uu_not_yet_due_and_demandable" />
+                                        </div>
+                                    </div>
+                                    <div class="mb-4 grid grid-cols-2 gap-4">
+                                        <div>
+                                            <InputLabel for="check_date" value="Check Date"/>
+                                            <TextInput
+                                                id="check_date"
+                                                type="date"
+                                                class="mt-1 block w-full"
+                                                v-model="add_creditor_form.check_date"
+                                                autocomplete="check_date"
+                                                placeholder="Enter check date."
+                                            />
+                                            <InputError class="mt-2" :message="add_creditor_form.errors.check_date" />
+                                        </div>
+                                        <div>
+                                            <InputLabel for="check_number" value="Check Number"/>
+                                            <TextInput
+                                                id="check_number"
+                                                type="text"
+                                                class="mt-1 block w-full"
+                                                v-model="add_creditor_form.check_number"
+                                                autocomplete="check_number"
+                                                placeholder="Enter check number."
+                                            />
+                                            <InputError class="mt-2" :message="add_creditor_form.errors.check_number" />
+                                        </div>
+                                    </div>
+                                    <div class="mb-4">
+                                        <InputLabel for="particulars" value="Particulars" required="true"/>
+                                        <TextInput
+                                            id="particulars"
+                                            type="text"
+                                            class="mt-1 block w-full"
+                                            v-model="add_creditor_form.particulars"
+                                            autocomplete="particulars"
+                                            placeholder="Enter particulars."
+                                        />
+                                        <InputError class="mt-2" :message="add_creditor_form.errors.particulars" />
+                                    </div>
+
+                                    <v-divider class="my-4"></v-divider>
+                                    <div class="text-end">
+                                        <v-btn
+                                            text="Close"
+                                            variant="plain"
+                                            @click="add_creditor_dialog = false"
+                                        ></v-btn>
+
+                                        <v-btn
+                                            color="primary"
+                                            text="Save"
+                                            variant="tonal"
+                                            type="submit"
+                                            :class="{ 'opacity-25': add_creditor_form.processing }"
+                                            :loading="add_creditor_form.processing"
+                                        ></v-btn>
+                                    </div>
+                                </form>
+                            </div>
+                        </v-card-text>
+                    </v-card>
+                </v-dialog>
             </div>
         </div>
     </AuthenticatedLayout>
@@ -357,6 +701,14 @@ const submit = () => {
 
 <script>
 import Swal from 'sweetalert2';
+import { useFlashWatcher } from '@/Utils/useFlashWatcher';
+import ExportSearchWrapper from '@/Components/ExportSearchWrapper.vue';
+import ExportButton from '@/Components/ExportButton.vue';
+import SearchBar from '@/Components/SearchBar.vue';
+import FilterWrapper from '@/Components/FilterWrapper.vue';
+import SelectInput from '@/Components/SelectInput.vue';
+import DatePicker from '@/Components/DatePicker.vue';
+
   export default {
     // from the database
     // props: {
@@ -393,74 +745,87 @@ import Swal from 'sweetalert2';
                     {
                         title: 'Date',
                         value: 'reference_date',
-                        align: 'center'
+                        align: 'start'
                     },
                     {
                         title: 'Serial No.',
                         value: 'serial_number',
-                        align: 'center'
+                        align: 'start'
                     },
                 ]
             },
             {
                 title: 'UACS Object Code',
-                align: 'center',
+                align: 'start',
                 key: 'uacs',
                 sortable: true,
             },
             {
                 title: 'Utilization',
-                align: 'center',
+                align: 'start',
                 key: 'utilization',
                 sortable: true,
             },
-            {
-                title: 'Utilized BA',
-                align: 'center',
-                key: 'utilized_ba',
-                sortable: true,
-            },
+            // {
+            //     title: 'Utilized BA',
+            //     align: 'center',
+            //     key: 'utilized_ba',
+            //     sortable: true,
+            // },
             {
                 title: 'Disbursements',
-                align: 'center',
+                align: 'start',
                 key: 'disbursements',
                 sortable: true,
             },
             {
-                title: 'Prticulars',
+                title: 'Check No.',
+                value: 'check_number',
+                align: 'start',
+                sortable: false,
+            },
+            {
+                title: 'Date',
+                value: 'check_date',
+                align: 'start'
+            },
+            {
+                title: 'Particulars',
+                value: 'particulars',
+                align: 'start',
+                sortable: false,
+            },
+            {
+                title: 'Unpaid Utilization',
                 align: 'center',
                 children: [
                     {
-                        title: 'Check No.',
-                        value: 'check_number',
-                        align: 'center'
+                        title: 'Due and Demandable',
+                        value: 'uu_due_and_demandable',
+                        align: 'start'
                     },
                     {
-                        title: 'Date',
-                        value: 'particulars_date',
-                        align: 'center'
-                    },
-                    {
-                        title: 'Particulars',
-                        value: 'particulars'
+                        title: 'Not Yet Due and Demandable',
+                        value: 'uu_not_yet_due_and_demandable',
+                        align: 'start'
                     },
                 ]
             },
             {
                 title: 'Total MOOE',
-                align: 'center',
+                align: 'start',
                 key: 'total_mooe',
                 sortable: true,
             },
             {
                 title: 'Total CO',
-                align: 'center',
+                align: 'start',
                 key: 'total_co',
                 sortable: true,
             },
             {
                 title: 'Overall Total',
-                align: 'center',
+                align: 'start',
                 key: 'overall_total',
                 sortable: true,
             },

@@ -11,6 +11,7 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\CreditorController;
 use App\Http\Controllers\UacsController;
 use App\Http\Controllers\YearController;
 use App\Models\Proposal;
@@ -104,10 +105,15 @@ Route::middleware('auth')->group(function () {
 
     Route::controller(ExpenseController::class)->group(function(){
         Route::get('/expenses', 'display')->name('expenses.display');
+        Route::post('/expenses/import', 'import')->name('expenses.import');
+        Route::put('/expenses/{id}', 'update')->name('expenses.update');
+        Route::delete('/expenses/{id}', 'delete')->name('expenses.delete');
+        Route::get('/expenses/{id}/view', 'view')->name('expenses.view');
     });
 
-    Route::controller(ExpenseController::class)->group(function(){
-        Route::get('/expenses/{id}/view', 'view')->name('expenses.view');
+    Route::controller(CreditorController::class)->group(function(){
+        Route::get('/expenses/{id}/creditors', 'display')->name('creditors.display');
+        Route::post('/expenses/{id}/creditors', 'store')->name('creditors.store');
     });
 
     Route::controller(ProposalController::class)->group(function(){

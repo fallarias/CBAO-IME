@@ -159,12 +159,14 @@ export const generatePDF = async ({
     headers = [],
     rows = [],
     orientation = "p", // 'p' = portrait | 'l' = landscape
+    tableOptions = {},
+    pageSize = "a4",
 }) => {
     isExporting.value = true;
     await nextTick();
 
     // === Setup ===
-    const doc = new jsPDF(orientation, "mm", "a4");
+    const doc = new jsPDF(orientation, "mm", pageSize);
     const pdfTitle = generatePdfTitle(reportTitle);
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -200,12 +202,13 @@ export const generatePDF = async ({
         head: [headers],
         body: rows,
         theme: "grid",
-        styles: { fontSize: 9, cellPadding: 3, halign: "left" },
+        styles: { fontSize: 6, cellPadding: 2, halign: "left" },
         headStyles: {
             fillColor: [33, 37, 41],
             textColor: 255,
             fontStyle: "bold",
         },
+        ...tableOptions,
         didDrawPage: function (data) {
             // Header on every page
             addHeader();
@@ -216,7 +219,7 @@ export const generatePDF = async ({
             const printedBy = `Printed by: ${currentUser.name}`.toUpperCase();
             const printedDate = formatPrintedDate().toUpperCase();
 
-            doc.setFontSize(9);
+            doc.setFontSize(6);
             doc.setTextColor(0);
             doc.text(`Page ${pageNumber} of ${pageCount}`, 10, pageHeight - 10);
 
