@@ -29,11 +29,13 @@ class User extends Authenticatable
         'campus_id',
         'designation',
         'role',
+        'accounts',
         'reports',
         'enterprises',
         'inventory',
         'income',
         'expenses',
+        'proposals',
         'updated_by'
     ];
 

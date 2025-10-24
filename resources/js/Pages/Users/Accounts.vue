@@ -258,6 +258,7 @@ const change_account_status_form = useForm({
 
 
 const add_user_form = useForm({
+    role: '',
     last_name: '',
     first_name: '',
     middle_name: '',
@@ -265,11 +266,13 @@ const add_user_form = useForm({
     email: '',
     campus: '',
     designation: '',
+    accounts: false,
     reports: false,
     enterprises: false,
     inventory: false,
     income: false,
-    expenses: false
+    expenses: false,
+    proposals: false
 })
 
 const submit = () => {
@@ -491,46 +494,46 @@ const change_account_status = (id) => {
 
                                 <template v-slot:item.actions="{ item }">
                                     <div class="text-end">
-                                        
-
                                         <div class="inline-flex rounded-md shadow-xs" role="group">
-                                            <button type="button" class="inline-flex items-center px-4 py-4 text-sm font-medium text-white border border-gray-200 rounded-s-lg hover:bg-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 bg-blue-500">
+                                            <!-- <button type="button" class="inline-flex items-center px-4 py-4 text-sm font-medium text-white border border-gray-200 rounded-s-lg hover:bg-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 bg-blue-500">
                                                 <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
                                                 <path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm0 5a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm0 13a8.949 8.949 0 0 1-4.951-1.488A3.987 3.987 0 0 1 9 13h2a3.987 3.987 0 0 1 3.951 3.512A8.949 8.949 0 0 1 10 18Z"/>
                                                 </svg>
-                                            </button>
-                                            <button @click="editUserData(item.number-1)" type="button" class="inline-flex items-center px-4 py-4 text-sm font-medium text-white bg-yellow-500 border-t border-b border-gray-200 hover:bg-yellow-700 focus:z-10 focus:ring-2 focus:ring-yellow-700 focus:text-yellow-700">
-                                                <!-- <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                                <path stroke="currentColor" stroke-linecap="square" stroke-linejoin="round" stroke-width="2" d="M7 19H5a1 1 0 0 1-1-1v-1a3 3 0 0 1 3-3h1m4-6a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm7.441 1.559a1.907 1.907 0 0 1 0 2.698l-6.069 6.069L10 19l.674-3.372 6.07-6.07a1.907 1.907 0 0 1 2.697 0Z"/>
-                                                </svg> -->
+                                            </button> -->
+                                            <v-tooltip :text="$page.props.auth.user.role == 'Admin' ? 'Edit user details.' : 'You don/t have the permission to use this feature.'" location="top">
+                                                <template v-slot:activator="{ props }">
+                                                    <button :disabled="$page.props.auth.user.role != 'Admin'" v-bind="props" @click="editUserData(item.number-1)" type="button" class="inline-flex items-center px-4 py-4 text-sm font-medium text-white bg-yellow-500 border-t border-b border-gray-200 rounded-s-lg hover:bg-yellow-700 focus:z-10 focus:ring-2 focus:ring-yellow-700 focus:text-yellow-700 disabled:bg-gray-300 disabled:text-gray-500">
+                                                        <v-icon size="15">mdi-account-edit</v-icon>
+                                                    </button>
+                                                </template>
+                                            </v-tooltip>
 
-                                                <v-icon size="15">mdi-account-edit</v-icon>
-                                            </button>
-                                            <button @click="resetPassword(item.number-1)" type="button" class="inline-flex items-center px-4 py-4 text-sm font-medium text-white bg-slate-500 border-t border-b border-gray-200 hover:bg-slate-700 hover:text-slate-700 focus:z-10 focus:ring-2 focus:ring-slate-700 focus:text-slate-700">
-                                                <!-- <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                                
-                                                <path fill-rule="evenodd" d="M15 7a2 2 0 1 1 4 0v4a1 1 0 1 0 2 0V7a4 4 0 0 0-8 0v3H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2V7Zm-5 6a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0v-3a1 1 0 0 1 1-1Z" clip-rule="evenodd"/>
-                                                </svg> -->
+                                            <v-tooltip text="Reset user password." location="top">
+                                                <template v-slot:activator="{ props }">
+                                                    <button v-bind="props" @click="resetPassword(item.number-1)" type="button" class="inline-flex items-center px-4 py-4 text-sm font-medium text-white bg-slate-500 border-t border-b border-gray-200 hover:bg-slate-700 hover:text-slate-700 focus:z-10 focus:ring-2 focus:ring-slate-700 focus:text-slate-700">
 
-                                                <v-icon size="15">mdi-key-variant</v-icon>
-                                            </button>
-                                            <button v-if="item.account_status == 'Deactivated'" @click="changeAccountStatus(item.number-1)" type="button" class="inline-flex items-center px-4 py-4 text-sm font-medium text-white bg-emerald-500 border border-gray-200 rounded-e-lg hover:bg-emerald-700 hover:text-emerald-700 focus:z-10 focus:ring-2 focus:ring-emerald-700 focus:text-emerald-700">
-                                                <!-- <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M20 10H4v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8ZM9 13v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1Z" clip-rule="evenodd"/>
-                                                <path d="M2 6a2 2 0 0 1 2-2h16a2 2 0 1 1 0 4H4a2 2 0 0 1-2-2Z"/>
-                                                </svg> -->
+                                                        <v-icon size="15">mdi-key-variant</v-icon>
+                                                    </button>
+                                                </template>
+                                            </v-tooltip>
 
-                                                <v-icon size="15">mdi-lock-open-variant</v-icon>
-                                            </button>
+                                            <v-tooltip :text="$page.props.auth.user.role == 'Admin' ? 'Reactivate user.' : 'You don/t have the permission to use this feature.'" location="top"  v-if="item.account_status == 'Deactivated'" >
+                                                <template v-slot:activator="{ props }">
+                                                    <button :disabled="$page.props.auth.user.role != 'Admin'" v-bind="props" @click="changeAccountStatus(item.number-1)" type="button" class="inline-flex items-center px-4 py-4 text-sm font-medium text-white bg-emerald-500 border border-gray-200 rounded-e-lg hover:bg-emerald-700 hover:text-emerald-700 focus:z-10 focus:ring-2 focus:ring-emerald-700 focus:text-emerald-700 disabled:bg-gray-300 disabled:text-gray-500">
 
-                                            <button v-else @click="changeAccountStatus(item.number-1)" type="button" class="inline-flex items-center px-4 py-4 text-sm font-medium text-white bg-red-500 border border-gray-200 rounded-e-lg hover:bg-red-700 hover:text-emerald-700 focus:z-10 focus:ring-2 focus:ring-red-700 focus:text-red-700">
-                                                <!-- <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M20 10H4v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8ZM9 13v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1Z" clip-rule="evenodd"/>
-                                                <path d="M2 6a2 2 0 0 1 2-2h16a2 2 0 1 1 0 4H4a2 2 0 0 1-2-2Z"/>
-                                                </svg> -->
+                                                        <v-icon size="15">mdi-lock-open-variant</v-icon>
+                                                    </button>
+                                                </template>
+                                            </v-tooltip>
 
-                                                <v-icon size="15">mdi-lock</v-icon>
-                                            </button>
+                                            <v-tooltip :text="$page.props.auth.user.role == 'Admin' ? 'Deactivate user.' : 'You don/t have the permission to use this feature.'" location="top" v-else >
+                                                <template v-slot:activator="{ props }">
+                                                    <button  :disabled="$page.props.auth.user.role != 'Admin'" v-bind="props" @click="changeAccountStatus(item.number-1)" type="button" class="inline-flex items-center px-4 py-4 text-sm font-medium text-white bg-red-500 border border-gray-200 rounded-e-lg hover:bg-red-700 hover:text-emerald-700 focus:z-10 focus:ring-2 focus:ring-red-700 focus:text-red-700 disabled:bg-gray-300 disabled:text-gray-500">
+
+                                                        <v-icon size="15">mdi-lock</v-icon>
+                                                    </button>
+                                                </template>
+                                            </v-tooltip>
                                         </div>
 
                                         <!-- <v-btn variant="flat" color="warning" class="mr-2 text-none" prepend-icon="mdi-pencil" @click="editUserData(item.number-1)">Edit</v-btn>
@@ -546,11 +549,22 @@ const change_account_status = (id) => {
                     <!-- dialogs  -->
                      <div>
                         <!-- add new user account  -->
-                         <v-dialog v-model="add_user_dialog" persistent max-width="800">
+                         <v-dialog v-model="add_user_dialog" persistent max-width="900">
                             <v-card prepend-icon="mdi-account" title="Add User Account" class="pa-2">
                                 <v-card-text>
                                     <div>
                                         <form @submit.prevent="submit">
+                                            <div class="mb-4" v-if="$page.props.auth.user.role == 'Admin'">
+                                                <label for="role" class="block mb-2 text-sm font-medium text-gray-900">User Role <span class="text-red-500">*</span></label>
+                                                <select id="role" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" v-model="add_user_form.role">
+                                                    <option disabled value="">-- Select User Role --</option>
+                                                    <option value="President">University President</option>
+                                                    <option value="VP">University Vice President</option>
+                                                    <option value="University">University Director</option>
+                                                    <option value="Campus">Campus Director</option>
+                                                    <option value="User">User</option>
+                                                </select>
+                                            </div>
                                             <div class="mb-4">
                                                 <v-row>
                                                     <v-col>
@@ -611,7 +625,7 @@ const change_account_status = (id) => {
                                                     <v-col>
                                                         <div>
                                                             <label for="designation" class="block mb-2 text-sm font-medium text-gray-900">Designation <span class="text-red-500">*</span></label>
-                                                            <input type="text" id="designation" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" placeholder="John" required v-model="add_user_form.designation"/>
+                                                            <input type="text" id="designation" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" placeholder="Enter your designation." required v-model="add_user_form.designation"/>
                                                         </div>
                                                     </v-col>
                                                 </v-row>
@@ -634,6 +648,12 @@ const change_account_status = (id) => {
                                                     </div>
                                                 </div>
                                                 <ul class="items-center w-full text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg sm:flex">
+                                                    <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r">
+                                                        <div class="flex items-center ps-3">
+                                                            <input id="accounts" type="checkbox" value="" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-emerald-500 dark:focus:ring-emerald-600" v-model="add_user_form.accounts">
+                                                            <label for="accounts" class="w-full py-3 ms-2 text-sm text-gray-900">Accounts</label>
+                                                        </div>
+                                                    </li>
                                                     <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r">
                                                         <div class="flex items-center ps-3">
                                                             <input id="reports" type="checkbox" value="" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-emerald-500 dark:focus:ring-emerald-600" v-model="add_user_form.reports">
@@ -662,6 +682,12 @@ const change_account_status = (id) => {
                                                         <div class="flex items-center ps-3">
                                                             <input id="expenses" type="checkbox" value="" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-emerald-500 dark:focus:ring-emerald-600" v-model="add_user_form.expenses">
                                                             <label for="expenses" class="w-full py-3 ms-2 text-sm text-gray-900">Expenses</label>
+                                                        </div>
+                                                    </li>
+                                                    <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r">
+                                                        <div class="flex items-center ps-3">
+                                                            <input id="proposals" type="checkbox" value="" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-emerald-500 dark:focus:ring-emerald-600" v-model="add_user_form.proposals">
+                                                            <label for="proposals" class="w-full py-3 ms-2 text-sm text-gray-900">Proposals</label>
                                                         </div>
                                                     </li>
                                                 </ul>
@@ -781,6 +807,12 @@ const change_account_status = (id) => {
                                                 <ul class="items-center w-full text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg sm:flex">
                                                     <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r">
                                                         <div class="flex items-center ps-3">
+                                                            <input id="accounts" type="checkbox" value="" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-emerald-500 dark:focus:ring-emerald-600" v-model="edit_user_form.accounts">
+                                                            <label for="accounts" class="w-full py-3 ms-2 text-sm text-gray-900">Accounts</label>
+                                                        </div>
+                                                    </li>
+                                                    <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r">
+                                                        <div class="flex items-center ps-3">
                                                             <input id="reports" type="checkbox" value="" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-emerald-500 dark:focus:ring-emerald-600" v-model="edit_user_form.reports">
                                                             <label for="reports" class="w-full py-3 ms-2 text-sm text-gray-900">Reports</label>
                                                         </div>
@@ -807,6 +839,12 @@ const change_account_status = (id) => {
                                                         <div class="flex items-center ps-3">
                                                             <input id="expenses" type="checkbox" value="" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-emerald-500 dark:focus:ring-emerald-600" v-model="edit_user_form.expenses">
                                                             <label for="expenses" class="w-full py-3 ms-2 text-sm text-gray-900">Expenses</label>
+                                                        </div>
+                                                    </li>
+                                                    <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r">
+                                                        <div class="flex items-center ps-3">
+                                                            <input id="proposals" type="checkbox" value="" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-emerald-500 dark:focus:ring-emerald-600" v-model="edit_user_form.proposals">
+                                                            <label for="proposals" class="w-full py-3 ms-2 text-sm text-gray-900">Proposals</label>
                                                         </div>
                                                     </li>
                                                 </ul>

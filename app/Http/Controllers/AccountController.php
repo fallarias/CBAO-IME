@@ -26,8 +26,11 @@ class AccountController extends Controller
         // Get list of campuses for dropdown or reference
         $campuses = Campus::select('id', 'campus')->get();
 
-        $users = User::with(['campus:id,campus', 'updatedBy:id,first_name,last_name,middle_name'])
-        ->where('role', 'User')
+        $users = User::with([
+            'campus:id,campus', 
+            'updatedBy:id,first_name,last_name,middle_name'
+        ])
+        ->where('id', '!=', Auth::id()) // Exclude the currently logged-in user
         ->select([
             'id',
             'campus_id',
@@ -37,17 +40,19 @@ class AccountController extends Controller
             'sex',
             'email',
             'designation',
-            'campus_id',
+            'accounts',
             'reports',
             'enterprises',
             'inventory',
             'income',
             'expenses',
+            'proposals',
             'created_at',
             'updated_at',
             'updated_by',
             'account_status',
         ])
+        ->orderBy('created_at', 'DESC')
         ->get();
 
         // ✅ Count totals before mapping
@@ -96,6 +101,7 @@ class AccountController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'role' => 'required|in:Admin,President,VP,University,Campus,User',
             'last_name' => 'required|string|max:255',
             'first_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
@@ -119,6 +125,7 @@ class AccountController extends Controller
 
         try {
             $user = User::create([
+                'role'          => $validated['role'],
                 'last_name'     => $validated['last_name'],
                 'first_name'    => $validated['first_name'],
                 'middle_name'   => $validated['middle_name'],

@@ -48,6 +48,15 @@ class HandleInertiaRequests extends Middleware
                     'designation' => $request->user()->designation,
                     'role' => $request->user()->role,
                     'sex' => $request->user()->sex,
+                    'permissions' => [
+                        'accounts' => (bool) $request->user()->accounts,
+                        'reports' => (bool) $request->user()->reports,
+                        'enterprises' => (bool) $request->user()->enterprises,
+                        'inventory' => (bool) $request->user()->inventory,
+                        'income' => (bool) $request->user()->income,
+                        'expenses' => (bool) $request->user()->expenses,
+                        'proposals' => (bool) $request->user()->proposals,
+                    ]
                 ] : null,
 
             ],

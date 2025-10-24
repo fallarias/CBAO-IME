@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('password');
             $table->bigInteger('campus_id')->unsigned()->nullable();
             $table->foreign('campus_id')->references('id')->on('campuses');
-            $table->enum("role", ["Admin","VP", "Director","User"])->default("User");
+            $table->enum("role", ["Admin","VP", "Director","User", "President"])->default("User");
             $table->boolean('accounts')->default(false);
             $table->boolean('reports')->default(false);
             $table->boolean('enterprises')->default(false);

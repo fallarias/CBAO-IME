@@ -481,7 +481,7 @@ useFlashWatcher("inventory.display")
                                             </div>
 
                                             <div class="mb-4">
-                                                <div>
+                                                <div v-if="$page.props.auth.user.role == 'Admin'">
                                                     <InputLabel for="campus_id" value="Select campus" required="true"/>
                                                     <SelectInput id="campus_id" v-model="import_enterprise_form.campus_id">
                                                         <option disabled>Select campus</option>

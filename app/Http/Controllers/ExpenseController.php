@@ -49,6 +49,8 @@ class ExpenseController extends Controller
         )
         ->leftJoin('campuses', 'expenses.campus_id', '=', 'campuses.id')
         ->leftJoin('enterprises', 'expenses.enterprise_id', '=', 'enterprises.id')
+        // FILTER: Add the where clause to match the authenticated user's campus ID
+        ->where('expenses.campus_id', Auth::user()->campus_id)
         ->with(['budgetParticulars:id,expense_id,particular_name,amount'])
         ->get();
 

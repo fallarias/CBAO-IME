@@ -771,12 +771,12 @@ export default {
                     key: 'added_by',
                     sortable: false,
                 },
-                {
-                    title: 'Account Ledgers',
-                    align: 'center',
-                    key: 'account_ledgers',
-                    sortable: true,
-                },
+                // {
+                //     title: 'Account Ledgers',
+                //     align: 'center',
+                //     key: 'account_ledgers',
+                //     sortable: true,
+                // },
                 {
                     title: 'Actions',
                     align: 'end',

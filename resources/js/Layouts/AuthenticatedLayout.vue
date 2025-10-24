@@ -41,14 +41,15 @@ const user_name = {
                   <v-list-item-title class="navigation" role="link">Profile</v-list-item-title>
               </NavLink> -->
   
+              <NavLink v-if="$page.props.auth.user.permissions.accounts == true" :href="route('accounts.display')" :active="route().current('accounts.display')" :icon="`mdi-account-group`">
+                  <v-list-item-title class="navigation" role="link">Accounts</v-list-item-title>
+              </NavLink>
+
             <v-list-group value="Setup" v-if="$page.props.auth.user.role == 'Admin'">
               <template v-slot:activator="{ props }">
                   <v-list-item v-bind="props" prepend-icon="mdi-cog" title="Setup"></v-list-item>
               </template>
   
-              <NavLink :href="route('accounts.display')" :active="route().current('accounts.display')" :icon="`mdi-account-group`">
-                  <v-list-item-title class="navigation" role="link">Accounts</v-list-item-title>
-              </NavLink>
               <NavLink :href="route('campuses.display')" :active="route().current('campuses.display')" :icon="`mdi-school`">
                   <v-list-item-title class="navigation" role="link">Campuses</v-list-item-title>
               </NavLink>
