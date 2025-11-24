@@ -14,7 +14,9 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('avatar')->default("default_avatar.jpg");
-            $table->string('name');
+            $table->string('last_name');
+            $table->string('first_name');
+            $table->string('middle_name');
             $table->enum("sex", ["Male","Female"]);
             $table->string('designation');
             $table->string('email')->unique();
@@ -30,11 +32,16 @@ return new class extends Migration
             $table->boolean('income')->default(false);
             $table->boolean('expenses')->default(false);
             $table->boolean('proposals')->default(false);
+            $table->enum("account_status", ["Verified","Not Verified"]);
             $table->dateTime('last_modified_at')->nullable();
+            $table->dateTime('last_modified_by')->nullable();
             $table->bigInteger('user_id')->unsigned()->nullable();
             $table->foreign('user_id')->references('id')->on('users');
             $table->rememberToken();
+            $table->bigInteger('updated_by')->unsigned()->nullable();
+            $table->dateTime('deleted_at')->nullable();
             $table->timestamps();
+
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

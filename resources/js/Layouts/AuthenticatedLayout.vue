@@ -5,7 +5,7 @@ import ProfileMenu from '@/Partials/ProfileMenu.vue';
 import NotificationBar from '@/Partials/NotificationBar.vue';
 import FlashMessage from '@/Components/FlashMessage.vue';
 import { usePage } from '@inertiajs/vue3';
-  
+
 const drawer = ref(null)
 
 const user_name = {
@@ -18,7 +18,7 @@ const user_name = {
     <v-app id="inspire">
         <v-app-bar :elevation="1" color="green-darken-4" height="80">
             <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
-            
+
             <v-app-bar-title>
                 <div>
                     <p class="font-bold">URGM</p>
@@ -40,7 +40,7 @@ const user_name = {
               <!-- <NavLink :icon="`mdi-account`">
                   <v-list-item-title class="navigation" role="link">Profile</v-list-item-title>
               </NavLink> -->
-  
+
               <NavLink v-if="$page.props.auth.user.permissions.accounts == true" :href="route('accounts.display')" :active="route().current('accounts.display')" :icon="`mdi-account-group`">
                   <v-list-item-title class="navigation" role="link">Accounts</v-list-item-title>
               </NavLink>
@@ -49,7 +49,7 @@ const user_name = {
               <template v-slot:activator="{ props }">
                   <v-list-item v-bind="props" prepend-icon="mdi-cog" title="Setup"></v-list-item>
               </template>
-  
+
               <NavLink :href="route('campuses.display')" :active="route().current('campuses.display')" :icon="`mdi-school`">
                   <v-list-item-title class="navigation" role="link">Campuses</v-list-item-title>
               </NavLink>
@@ -62,20 +62,20 @@ const user_name = {
               <NavLink :href="route('uacs.display')" :active="route().current('uacs.display')" :icon="`mdi-label-multiple`">
                   <v-list-item-title class="navigation" role="link">UACS Code</v-list-item-title>
               </NavLink>
-              
+
             </v-list-group>
 
             <v-list-group value="Transaction">
               <template v-slot:activator="{ props }">
-                  <v-list-item v-bind="props" prepend-icon="mdi-handshake" title="Transaction"></v-list-item> 
+                  <v-list-item v-bind="props" prepend-icon="mdi-handshake" title="Transaction"></v-list-item>
               </template>
-  
+
               <NavLink :href="route('enterprises.display')" :active="route().current('enterprises.display') || route().current('enterprises.view') || route().current('enterprises.fetch')" :icon="`mdi-cash-multiple`">
                   <v-list-item-title class="navigation" role="link">Enterprises</v-list-item-title>
               </NavLink>
-              <NavLink :href="route('inventory.display')" :active="route().current('inventory.display') || route().current('inventory.view')" :icon="`mdi-package`">
+              <!-- <NavLink :href="route('inventory.display')" :active="route().current('inventory.display') || route().current('inventory.view')" :icon="`mdi-package`">
                   <v-list-item-title class="navigation" role="link">Inventory</v-list-item-title>
-              </NavLink>
+              </NavLink> -->
               <NavLink :href="route('income.display')" :active="route().current('income.display') || route().current('income.view')" :icon="`mdi-cash-check`">
                   <v-list-item-title class="navigation" role="link">Income</v-list-item-title>
               </NavLink>
@@ -90,11 +90,29 @@ const user_name = {
               </NavLink> -->
             </v-list-group>
 
+            <v-list-group>
+                <template v-slot:activator="{ props }">
+                    <v-list-item v-bind="props" prepend-icon="mdi-package" title="Inventory"></v-list-item>
+                </template>
+
+                <NavLink :href="route('integrated_inventory.display')" :active="route().current('integrated_inventory.display') || route().current('integrated_inventory.view')" :icon="`mdi-package`">
+                  <v-list-item-title class="navigation" role="link">Product Inventory</v-list-item-title>
+                </NavLink>
+
+                <NavLink :href="route('integrated_inventory.display_sales')" :active="route().current('integrated_inventory.display_sales') || route().current('integrated_inventory.view_sales')" :icon="`mdi-chart-pie`">
+                  <v-list-item-title class="navigation" role="link">Sales Report</v-list-item-title>
+                </NavLink>
+
+                <NavLink :href="route('integrated_inventory.display_transaction')" :active="route().current('integrated_inventory.display_transaction') || route().current('integrated_inventory.view_transaction')" :icon="`mdi-view-list`">
+                  <v-list-item-title class="navigation" role="link">Transaction List</v-list-item-title>
+                </NavLink>
+            </v-list-group>
+
             <!-- <v-list-group value="Reports">
               <template v-slot:activator="{ props }">
                   <v-list-item v-bind="props" prepend-icon="mdi-file-chart" title="Reports"></v-list-item>
               </template>
-  
+
               <NavLink :href="route('inventory.display')" :active="route().current('inventory.display') || route().current('inventory.view')" :icon="`mdi-package`">
                   <v-list-item-title class="navigation" role="link">Inventory</v-list-item-title>
               </NavLink>
@@ -108,7 +126,7 @@ const user_name = {
                   <v-list-item-title class="navigation" role="link">Evaluation</v-list-item-title>
               </NavLink>
             </v-list-group> -->
-  
+
           </v-list>
         </v-navigation-drawer>
       <v-main class="bg-stone-50">
@@ -118,10 +136,10 @@ const user_name = {
       </v-main>
     </v-app>
   </template>
-  
+
   <script>
     export default {
-      data: () => ({ 
+      data: () => ({
         drawer: null,
         open: ['Setup', 'Transaction'],
       }),

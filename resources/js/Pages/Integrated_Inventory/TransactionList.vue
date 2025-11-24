@@ -10,18 +10,19 @@ import { nextTick, ref, watch } from 'vue';
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 import Swal from 'sweetalert2';
-
+import { computed } from 'vue';
 const page = usePage()
 
 const current_user = {
     name: page.props.auth.user.first_name + " " + page.props.auth.user.last_name,
-    campus: page.props.auth.user.campus.campus
+    campus: page.props.auth.user.campus.campus,
 }
 
 const isExporting = ref(false)
 const pdfSection = ref(null)
 const add_new_dialog = ref(false)
 const edit_dialog = ref(false)
+const dialog = ref(false);
 
 const add_new_form = useForm({
     enterprise_id: '',
@@ -30,6 +31,23 @@ const add_new_form = useForm({
     quantity: 0,
     price: 0.00,
     unit: ''
+})
+
+const add_product = useForm({
+    campus: '',
+    product_id: '',
+    quantity: 0,
+})
+
+const filteredProducts = computed(() => {
+    const campusId = Number(add_product.campus)
+    const products = page.props.products ?? []
+
+    if (!campusId) {
+        return products
+    }
+
+    return products.filter(product => product.campus_id === campusId)
 })
 
 const form = useForm({
@@ -41,188 +59,204 @@ const form = useForm({
 });
 
 const submit = () => {
-    // console.log(add_new_form.data());
-    add_new_form.post(route('inventory.store'), {
+    // console.log(add_user_form.data());
+    add_enterprise_form.post(route('enterprises.store'), {
         onSuccess: () => {
-            add_new_form.reset()
-            add_new_dialog.value = false // Close dialog
+            add_enterprise_form.reset()
+            add_enterprise_dialog.value = false // Close dialog
         },
     });
 };
 
-const formatPrintedDate = () => {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
+//UPDATE ACTION
+const changeStatus = (item, newStatus) => {
+    Swal.fire({
+        title: "Are you sure?",
+        text: "This will update the status.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Yes, confirm",
+        cancelButtonText: "No, cancel",
+    }).then((result) => {
+        if (result.isConfirmed) {
+            router.put('/integrated/inventory/transaction/status', {
+                id: item.id,
+                status: newStatus
+            });
+        }
+    });
+};
 
-  let hours = now.getHours()
-  const minutes = String(now.getMinutes()).padStart(2, '0')
-  const ampm = hours >= 12 ? 'PM' : 'AM'
-  hours = hours % 12 || 12 // convert 0 to 12
+page.props.transaction = page.props.transaction.map(item => ({
+  ...item,
+  status: item.status ?? ""
+}));
 
-  return `${year}-${month}-${day} at ${hours}:${minutes} ${ampm}`
+const submitProduct = () => {
+    //console.log(add_product.data());
+    add_product.post(route('reservation.store'), {
+        onSuccess: () => {
+            add_product.reset()
+            dialog.value = false // Close dialog
+        },
+    });
+};
+
+// define the functions here
+const export_excel_report = () => {
+  console.log("Excel Export clicked")
+  // your excel export logic here...
 }
 
-const generatePdfTitle = () => {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  const reportTitle = 'InventoryReport'
-  const randomId = Math.random().toString(36).substring(2, 8).toUpperCase()
+const export_pdf_report = () => {
+    console.log("PDF Export clicked")
+    const formatPrintedDate = () => {
+        const now = new Date()
+        const year = now.getFullYear()
+        const month = String(now.getMonth() + 1).padStart(2, '0')
+        const day = String(now.getDate()).padStart(2, '0')
 
-  return `${year}-${month}-${day}_${reportTitle}_${randomId}`
-}
+        let hours = now.getHours()
+        const minutes = String(now.getMinutes()).padStart(2, '0')
+        const ampm = hours >= 12 ? 'PM' : 'AM'
+        hours = hours % 12 || 12 // convert 0 to 12
 
-const generatePDF = async () => {
-    isExporting.value = true
-  await nextTick() // Ensure content is rendered
-
-  const doc = new jsPDF('p', 'mm', 'a4')
-  const pdfTitle = generatePdfTitle()
-  const pageWidth = doc.internal.pageSize.getWidth()
-  const pageHeight = doc.internal.pageSize.getHeight()
-
-  doc.setProperties({ title: pdfTitle })
-
-  const logo = new Image()
-  logo.src = '/storage/isu_seal.png' // Make sure this exists in public folder
-
-  logo.onload = async () => {
-    const canvas = await html2canvas(pdfSection.value.$el, { scale: 2 })
-    const imgData = canvas.toDataURL('image/png')
-
-    const contentHeight = (canvas.height * 210) / canvas.width
-    const totalPages = Math.ceil(contentHeight / pageHeight)
-
-    for (let i = 0; i < totalPages; i++) {
-      if (i !== 0) doc.addPage()
-
-      // === HEADER ===
-      doc.addImage(logo, 'PNG', 15, 10, 18, 18)
-      doc.setFontSize(11)
-      doc.setTextColor(0)
-      doc.text('Republic of the Philippines', 40, 15)
-      doc.setFontSize(13)
-      doc.setFont('helvetica', 'bold')
-      doc.text('ISABELA STATE UNIVERSITY', 40, 20)
-      doc.setFontSize(11)
-      doc.setFont('helvetica', 'normal')
-      doc.text('Echague, Isabela', 40, 25)
-      doc.setLineWidth(0.1)
-      doc.line(10, 30, pageWidth - 10, 30)
-
-      // === CONTENT ===
-      doc.addImage(
-        imgData,
-        'PNG',
-        10,
-        35,
-        190,
-        0,
-        '',
-        'FAST',
-        0,
-        i * pageHeight * (canvas.width / 210)
-      )
-
-      // === FOOTER ===
-    doc.setFillColor(255, 255, 255)
-    doc.rect(0, pageHeight - 20, pageWidth, 20, 'F')
-
-    // === Left: Page number ===
-    const pageText = `Page ${i + 1} of ${totalPages}`
-    doc.setFontSize(10)
-    doc.setTextColor(0)
-    doc.text(pageText, 10, pageHeight - 10) // left aligned
-
-    // === Right: Printed by and Date ===
-    const printedBy = `Printed by: ${current_user.name}`.toUpperCase()
-    const printedDate = formatPrintedDate().toUpperCase()
-
-    // Printed by
-    doc.setFontSize(8)
-    doc.setTextColor(0) // black
-    const printedByWidth = doc.getTextWidth(printedBy)
-    doc.text(printedBy, pageWidth - printedByWidth - 10, pageHeight - 10)
-
-    // Printed date (lighter gray)
-    doc.setTextColor(160, 160, 160) // lighter gray
-    const printedDateWidth = doc.getTextWidth(printedDate)
-    doc.text(printedDate, pageWidth - printedDateWidth - 10, pageHeight - 6)
-
-
+        return `${year}-${month}-${day} at ${hours}:${minutes} ${ampm}`
     }
 
-    // doc.save('isu-enterprise-report.pdf')
+    const generatePdfTitle = () => {
+        const now = new Date()
+        const year = now.getFullYear()
+        const month = String(now.getMonth() + 1).padStart(2, '0')
+        const day = String(now.getDate()).padStart(2, '0')
+        const reportTitle = 'InventoryReport'
+        const randomId = Math.random().toString(36).substring(2, 8).toUpperCase()
 
-    // === STREAM the PDF ===
-    doc.output('dataurlnewwindow') // Stream view in new tab
-    isExporting.value = false
-  }
+        return `${year}-${month}-${day}_${reportTitle}_${randomId}`
+    }
+
+    const generatePDF = async () => {
+        isExporting.value = true
+        await nextTick() // Ensure content is rendered
+
+        const doc = new jsPDF('p', 'mm', 'a4')
+        const pdfTitle = generatePdfTitle()
+        const pageWidth = doc.internal.pageSize.getWidth()
+        const pageHeight = doc.internal.pageSize.getHeight()
+
+        doc.setProperties({ title: pdfTitle })
+
+        const logo = new Image()
+        logo.src = '/storage/isu_seal.png' // Make sure this exists in public folder
+
+        logo.onload = async () => {
+            const canvas = await html2canvas(pdfSection.value.$el, { scale: 2 })
+            const imgData = canvas.toDataURL('image/png')
+
+            const contentHeight = (canvas.height * 210) / canvas.width
+            const totalPages = Math.ceil(contentHeight / pageHeight)
+
+            for (let i = 0; i < totalPages; i++) {
+            if (i !== 0) doc.addPage()
+
+            // === HEADER ===
+            doc.addImage(logo, 'PNG', 15, 10, 18, 18)
+            doc.setFontSize(11)
+            doc.setTextColor(0)
+            doc.text('Republic of the Philippines', 40, 15)
+            doc.setFontSize(13)
+            doc.setFont('helvetica', 'bold')
+            doc.text('ISABELA STATE UNIVERSITY', 40, 20)
+            doc.setFontSize(11)
+            doc.setFont('helvetica', 'normal')
+            doc.text('Echague, Isabela', 40, 25)
+            doc.setLineWidth(0.1)
+            doc.line(10, 30, pageWidth - 10, 30)
+
+            // === CONTENT ===
+            doc.addImage(
+                imgData,
+                'PNG',
+                10,
+                35,
+                190,
+                0,
+                '',
+                'FAST',
+                0,
+                i * pageHeight * (canvas.width / 210)
+            )
+
+            // === FOOTER ===
+            doc.setFillColor(255, 255, 255)
+            doc.rect(0, pageHeight - 20, pageWidth, 20, 'F')
+
+            // === Left: Page number ===
+            const pageText = `Page ${i + 1} of ${totalPages}`
+            doc.setFontSize(10)
+            doc.setTextColor(0)
+            doc.text(pageText, 10, pageHeight - 10) // left aligned
+
+            // === Right: Printed by and Date ===
+            const printedBy = `Printed by: ${current_user.name}`.toUpperCase()
+            const printedDate = formatPrintedDate().toUpperCase()
+
+            // Printed by
+            doc.setFontSize(8)
+            doc.setTextColor(0) // black
+            const printedByWidth = doc.getTextWidth(printedBy)
+            doc.text(printedBy, pageWidth - printedByWidth - 10, pageHeight - 10)
+
+            // Printed date (lighter gray)
+            doc.setTextColor(160, 160, 160) // lighter gray
+            const printedDateWidth = doc.getTextWidth(printedDate)
+            doc.text(printedDate, pageWidth - printedDateWidth - 10, pageHeight - 6)
+
+
+            }
+
+            // doc.save('isu-enterprise-report.pdf')
+
+            // === STREAM the PDF ===
+            //doc.output('dataurlnewwindow') // Stream view in new tab
+            doc.save(`${pdfTitle}.pdf`)
+            isExporting.value = false
+        }
+    }
+    generatePDF()
 }
 
-// success or error alert - swal
-// watch(
-//   () => page.props.flash,
-//   (flash) => {
-//     if (flash?.success) {
-//       Swal.fire({
-//         icon: 'success',
-//         title: 'Success',
-//         text: flash.success,
-//         confirmButtonColor: '#3085d6',
-//         didOpen: () => {
-//           const confirmBtn = Swal.getConfirmButton()
-//           if (confirmBtn) confirmBtn.style.color = "white" // ✅ custom text color
-//         }
-//       })
-//     } else if (flash?.error) {
-//       Swal.fire({
-//         icon: 'error',
-//         title: 'Error',
-//         text: flash.error,
-//         confirmButtonColor: '#d33',
-//         didOpen: () => {
-//           const confirmBtn = Swal.getConfirmButton()
-//           if (confirmBtn) confirmBtn.style.color = "white" // ✅ custom text color
-//         }
-//       })
-//     }
-//   },
-//   { immediate: true }
-// )
 
-//
 
 // edit inventory
 const edit_inventory_dialog = ref(false);
 const edit_inventory_form = useForm({
     id: '',
-    enterprise_name: '',
+    product_name: '',
     quantity: 0,
     price: 0.00,
-    unit: '',
-    enterprise_status: ''
+    low: 0,
+    status: '',
+    category: '',
 });
 
 const handle_edit_inventory = (id) => {
     const inventory = page.props.inventories.find(inv => inv.id === id);
     if (inventory) {
         edit_inventory_form.id = inventory.id;
-        edit_inventory_form.enterprise_name = inventory.enterprise_name;
+        edit_inventory_form.product_name = inventory.product_name;
         edit_inventory_form.quantity = inventory.quantity;
         edit_inventory_form.price = inventory.price;
-        edit_inventory_form.unit = inventory.unit;
-        edit_inventory_form.enterprise_status = inventory.enterprise_status;
+        edit_inventory_form.low = inventory.low;
+        edit_inventory_form.status = inventory.status;
+        edit_inventory_form.category = inventory.category;
         edit_inventory_dialog.value = true; // Open dialog
     }
 };
 
 const update_inventory = () => {
     // console.log(edit_inventory_form)
-    edit_inventory_form.put(route('inventory.update', edit_inventory_form.id), {
+    edit_inventory_form.put(route('integrated_inventory.update', edit_inventory_form.id), {
         onSuccess: () => {
             edit_inventory_form.reset()
             edit_inventory_dialog.value = false // Close dialog
@@ -264,15 +298,15 @@ const handle_redirect = () => {
 };
 // end import existing iges
 
-useFlashWatcher("inventory.display")
+useFlashWatcher("integrated_inventory.display_transaction")
 </script>
 
 <template>
-    <Head title="Product Inventory" />
+    <Head title="Transaction List " />
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">Product Inventory</h2>
+            <h2 class="text-xl font-semibold leading-tight text-gray-800">Transaction List</h2>
         </template>
 
         <div>
@@ -296,7 +330,7 @@ useFlashWatcher("inventory.display")
                                     <span
                                         :class="$vuetify.display.smAndDown ? 'text-lg font-weight-semibold' : 'text-2xl font-weight-semibold'"
                                     >
-                                        Inventory
+                                        Transaction List
                                     </span>
                                 </div>
 
@@ -306,16 +340,28 @@ useFlashWatcher("inventory.display")
                                 <v-btn
                                     v-if="!$vuetify.display.smAndDown"
                                     class="ms-2 text-none tracking-normal"
+                                    prepend-icon="mdi-ticket"
+                                    rounded="l"
+                                    text="Reservation Form"
+                                    variant="flat"
+                                    color="green-darken-4"
+                                    @click="dialog = true"
+                                ></v-btn>
+
+                                <!-- Full button for medium and up -->
+                                <!-- <v-btn
+                                    v-if="!$vuetify.display.smAndDown"
+                                    class="ms-2 text-none tracking-normal"
                                     prepend-icon="mdi-import"
                                     rounded="l"
                                     text="Import Enterprises"
                                     variant="flat"
                                     color="green-darken-4"
                                     @click="import_enterprises_dialog = true"
-                                ></v-btn>
+                                ></v-btn> -->
 
                                 <!-- Icon-only button for small devices -->
-                                <v-btn
+                                <!-- <v-btn
                                     v-else
                                     class="ms-2"
                                     icon
@@ -324,7 +370,7 @@ useFlashWatcher("inventory.display")
                                     @click="add_new_dialog = true"
                                 >
                                     <v-icon size="18" class="font-weight-bold">mdi-plus</v-icon>
-                                </v-btn>
+                                </v-btn> -->
                                 </div>
                             </v-card-title>
 
@@ -367,11 +413,14 @@ useFlashWatcher("inventory.display")
                                             <option value="" selected>
                                                 All Status
                                             </option>
-                                            <option value="Available">
-                                                Available
+                                            <option value="Paid">
+                                                Paid
                                             </option>
-                                            <option value="Not Available">
-                                                Not Available
+                                            <option value="Unpaid">
+                                                Unpaid
+                                            </option>
+                                            <option value="Cancelled">
+                                                Cancelled
                                             </option>
                                         </SelectInput>
                                         <SelectInput class="max-w-sm min-w-[200px]" v-model="filter.unit">
@@ -402,8 +451,8 @@ useFlashWatcher("inventory.display")
 
                             <v-data-table
                                 v-model:search="search"
-                                :filter-keys="['name']" :headers="header"
-                                :items="$page.props.inventories" hover :loading="loading"
+                                :filter-keys="['transaction_id']" :headers="header"
+                                :items="$page.props.transaction" hover :loading="loading"
                             >
                                 <template v-slot:loading>
                                     <v-skeleton-loader type="table-row@5"></v-skeleton-loader>
@@ -413,57 +462,78 @@ useFlashWatcher("inventory.display")
                                     <div class="text-start">{{ item.number }}</div>
                                 </template>
 
-                                <template v-slot:item.image="{ item }">
-                                    <div class="my-2">
-                                        <v-img
-                                            :src="`/storage/uploads/products/${item.image}`"
-                                            height="100" width="100"
-                                            cover
-                                        ></v-img>
-                                    </div>
+                                <template v-slot:item.product_name="{item}">
+                                    <div>{{ item.product.product_name }}</div>
+                                </template>
+
+                                <template v-slot:item.reserve_quantity="{item}">
+                                    <div>{{ item.reserve_quantity }}</div>
+                                </template>
+
+                                <template v-slot:item.price="{item}">
+                                    <div>{{ item.product.price }}</div>
                                 </template>
 
                                 <template v-slot:item.campus="{item}">
-                                    <div>{{ item.campus.name }}</div>
-                                </template>
-
-                                <template v-slot:item.quantity="{item}">
                                     <div>
-                                        {{ item.quantity }}
-                                        <v-chip label v-if="item.quantity <= 10" color="orange-darken-4" size="small" class="ms-2">Low stock!</v-chip>
+                                        {{ item.campus.name }}
+                                        <!-- <v-chip label v-if="item.quantity <= 10" color="orange-darken-4" size="small" class="ms-2">Low stock!</v-chip> -->
                                     </div>
                                 </template>
 
-                                <template v-slot:item.enterprise_status="{item}">
-                                    <v-chip size="small" class="ma-2" :color="item.enterprise_status == 'Available' ? 'green-darken-3' : 'red-darken-4'" label>{{ item.enterprise_status }}</v-chip>
+                                <template v-slot:item.date_purchase="{item}">
+                                    <div>{{ item.purchase }}</div>
                                 </template>
 
-                                <template v-slot:item.last_modified="{ item }">
-                                    <td style="width: fit-content; white-space: nowrap;" class="text-start pa-4">
-                                        <p class="text-xs font-bold text-uppercase text-gray-500">Last Modified</p>
-                                        <p class="my-1">{{ item.date }}</p>
-                                        <p class="border-l-4 ps-1 border-emerald-600 text-xs font-bold text-uppercase text-emerald-600">{{ item.updated_by }}</p>
-                                    </td>
+                                <template v-slot:item.id_number="{item}">
+                                    <div>{{ item.id_number }}</div>
                                 </template>
 
-                                <template v-slot:item.sales="{item}">
+                                <template v-slot:item.order="{ item }">
+                                    <div>{{ item.order }}</div>
+                                </template>
+
+                                <template v-slot:item.paid="{item}">
                                     <div>
-                                        <Link :href="route('inventory.view', 1)" class="text-blue-darken-3 hover:font-bold hover:underline">View Sales</Link>
+                                        <span v-if="['unpaid', 'cancelled', ''].includes(item.order)">—</span>
+                                        <span v-else>{{ item.paid }}</span>
                                     </div>
                                 </template>
 
-                                <template v-slot:item.actions="{ item }">
-                                    <div class="text-end">
-                                        <!-- <v-btn variant="flat" color="warning" class="mr-2 text-none" prepend-icon="mdi-pencil">Edit</v-btn>
-                                        <v-btn variant="flat" color="error" class="mr-2 text-none" prepend-icon="mdi-delete" @click="deleteProduct">Delete</v-btn> -->
-                                        <!-- <v-btn variant="tonal" color="warning" class="mr-2"  icon="mdi-pencil" size="x-small" @click="edit_enterprise(item.number-1)"></v-btn>
-                                        <v-btn variant="tonal" color="error"  icon="mdi-delete" size="x-small"></v-btn> -->
-                                        <div class="text-end d-flex justify-end align-center gap-1">
-                                            <ActionButton @click="handle_edit_inventory(item.id)" :variant="'flat'" :color="'warning'" :text="'Edit'" prepend-icon="mdi-pencil" />
-                                            <!-- <ActionButton @click="handle_delete_inventory(item.id)" :variant="'flat'" :color="'error'" :text="'Delete'" prepend-icon="mdi-delete" /> -->
-                                        </div>
+                                <template v-slot:item.action="{ item }">
+                                    <div class="flex justify-center">
+                                        <v-menu offset-y>
+                                            <!-- Dropdown button -->
+                                            <template #activator="{ props }">
+                                                <v-btn color="success" v-bind="props" outlined>
+                                                    Change Status
+                                                </v-btn>
+                                            </template>
+
+                                            <!-- Dropdown options wrapped in v-list -->
+                                            <v-list>
+                                                <v-list-item @click="changeStatus(item, 'paid')">
+                                                    <v-list-item-title>
+                                                        Mark as Paid
+                                                    </v-list-item-title>
+                                                </v-list-item>
+
+                                                <v-list-item @click="changeStatus(item, 'unpaid')">
+                                                    <v-list-item-title>
+                                                        Mark as Unpaid
+                                                    </v-list-item-title>
+                                                </v-list-item>
+
+                                                <v-list-item @click="changeStatus(item, 'cancelled')">
+                                                    <v-list-item-title>
+                                                        Mark as Cancelled
+                                                    </v-list-item-title>
+                                                </v-list-item>
+                                            </v-list>
+                                        </v-menu>
                                     </div>
                                 </template>
+
                             </v-data-table>
                         </v-card>
                     </div>
@@ -520,7 +590,8 @@ useFlashWatcher("inventory.display")
                                 </v-card-text>
                             </v-card>
                         </v-dialog>
-                        <!-- add or import product  -->
+
+                        <!-- add or import product to button creating new product-->
                         <v-dialog v-model="add_new_dialog" persistent max-width="600">
                             <v-card prepend-icon="mdi-cash-multiple" title="Import or Add New" class="pa-2">
                                 <v-card-text>
@@ -586,6 +657,13 @@ useFlashWatcher("inventory.display")
                                                                 <InputError class="mt-2" :message="add_new_form.errors.unit" />
                                                             </div>
                                                         </v-col>
+                                                        <v-col cols="12" :md="4" :lg="4">
+                                                            <div>
+                                                                <label for="unit" class="block mb-2 text-sm font-medium text-gray-900">Low Product <span class="text-red-500">*</span></label>
+                                                                <input type="number" id="low" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" placeholder="Enter quantity." v-model="add_new_form.quantity"/>
+                                                                <InputError class="mt-2" :message="add_new_form.errors.unit" />
+                                                            </div>
+                                                        </v-col>
                                                     </v-row>
                                                 </div>
                                             </div>
@@ -620,7 +698,7 @@ useFlashWatcher("inventory.display")
                                         <form @submit.prevent="update_inventory">
                                             <div class="mb-4">
                                                 <InputLabel for="enterprise" value="Enterprise" required="true"/>
-                                                <TextInput id="enterprise" type="text" class="w-full" v-model="edit_inventory_form.enterprise_name" disabled/>
+                                                <TextInput id="product_name" type="text" class="w-full" v-model="edit_inventory_form.product_name" disabled/>
                                             </div>
 
                                             <div class="mb-4">
@@ -636,24 +714,28 @@ useFlashWatcher("inventory.display")
                                                     <InputError class="mt-2" :message="edit_inventory_form.errors.quantity" />
                                                 </div>
                                                 <div class="w-full">
-                                                    <InputLabel for="unit" value="Unit" required="true"/>
-                                                    <SelectInput id="unit" v-model="edit_inventory_form.unit">
-                                                        <option disabled value="">-- Select unit --</option>
-                                                        <option value="pc">pc/s (piece/pieces)</option>
-                                                        <option value="kg">kg (kilogram)</option>
-                                                        <option value="m">m (meter)</option>
-                                                        <option value="l">l (liter)</option>
-                                                    </SelectInput>
+                                                    <InputLabel for="low" value="Low" required="true"/>
+                                                    <TextInput id="low" v-model="edit_inventory_form.low"/>
                                                 </div>
                                             </div>
                                             <div class="w-full">
                                                     <InputLabel for="status" value="Status" required="true"/>
-                                                    <SelectInput id="status" v-model="edit_inventory_form.enterprise_status">
+                                                    <SelectInput id="status" v-model="edit_inventory_form.status">
                                                         <option disabled value="">-- Select status --</option>
                                                         <option value="Available">Available</option>
                                                         <option value="Not Available">Not Available</option>
                                                     </SelectInput>
-                                                    <InputError class="mt-2" :message="edit_inventory_form.errors.enterprise_status" />
+                                                    <InputError class="mt-2" :message="edit_inventory_form.errors.status" />
+                                                </div>
+
+                                                <div class="mb-4">
+                                                    <label for="category" class="block mb-2 text-sm font-medium text-gray-900">Category <span class="text-red-500">*</span></label>
+                                                    <select id="category" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" v-model="edit_inventory_form.category">
+                                                        <option disabled selected value="">-- Select category --</option>
+                                                        <option value="Agri-based">Agri-based</option>
+                                                        <option value="Non Agri-based">Non Agri-based</option>
+                                                    </select>
+                                                    <InputError class="mt-2" :message="edit_inventory_form.errors.category" />
                                                 </div>
 
                                             <!-- <div class="mb-4" v-if="add_new_form.enterprise_id === 0">
@@ -733,111 +815,102 @@ useFlashWatcher("inventory.display")
                         </v-dialog>
 
                         <v-dialog v-model="dialog" persistent max-width="800">
-                            <v-card prepend-icon="mdi-package" title="Add Product" class="pa-2">
+                            <v-card prepend-icon="mdi-ticket" title="ReservationForm" class="pa-2">
                                 <v-card-text>
-
-
                                     <div>
-                                        <form>
-                                            <!-- 1. Product image  -->
-                                            <div class="mb-6">
-                                                <label for="default-input" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Product image <span>(optional)</span></label>
-                                                <div class="flex items-center justify-center w-full">
-                                                    <label for="dropzone-file" class="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600">
-                                                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                                            <svg class="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                                                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
-                                                            </svg>
-                                                            <p v-if="previewUrl" class="mb-2 text-sm text-gray-500 dark:text-gray-400 font-semibold">Change uploaded image</p>
-                                                            <p v-else class="mb-2 text-sm text-gray-500 dark:text-gray-400"><span class="font-semibold">Click to upload</span> or drag and drop</p>
-                                                            <p class="text-xs text-gray-500 dark:text-gray-400">SVG, PNG, JPG or GIF (MAX. 800x400px)</p>
-                                                        </div>
-                                                        <input id="dropzone-file" type="file" class="hidden" @change="handleFileChange" accept="image/*"/>
-                                                    </label>
+                                        <form @submit.prevent="submitProduct">
+
+                                            <div class="flex gap-4">
+                                                <!-- All Product and Stocks -->
+                                                <div class="mb-2">
+                                                    <v-table class="max-w-sm min-w-[300px] border rounded-lg">
+                                                        <thead>
+                                                        <tr>
+                                                            <th class="text-left"></th>
+                                                            <th class="text-center">Product Name</th>
+                                                            <th class="text-center">Current Stocks</th>
+                                                            <th class="text-left"></th>
+                                                        </tr>
+                                                        </thead>
+
+                                                        <tbody>
+                                                        <tr v-for="product in $page.props.reservation" :key="product.id">
+                                                            <td>
+                                                                <v-checkbox
+                                                                    v-model="add_product.product_id"
+                                                                    :value="product.id"
+                                                                    hide-details
+                                                                />
+                                                            </td>
+
+                                                            <td class="text-center">{{ product.product_name }}</td>
+                                                            <td class="text-center">{{ product.quantity }}</td>
+                                                            <td class="text-center">
+                                                                <v-text-field
+                                                                    v-if="add_product.product_id === product.id"
+                                                                    v-model="add_product.quantity"
+                                                                    type="number"
+                                                                    density="compact"
+                                                                    class="w-20"
+                                                                    hide-details
+                                                                ></v-text-field>
+                                                            </td>
+                                                        </tr>
+                                                        </tbody>
+                                                    </v-table>
                                                 </div>
-                                                <div v-if="previewUrl" class="d-flex">
-                                                    <div @click="previewImageDialog = true" class="hover:cursor-pointer text-blue-500 italic mt-2 text-sm">View image preview</div>
-                                                    <div @click="previewUrl = null" class="hover:cursor-pointer text-red-500 italic mt-2 text-sm ms-4">Remove image</div>
+
+
+                                                <!-- All User -->
+                                                <div class="mb-2">
+                                                    <v-table class="max-w-sm min-w-[300px] border rounded-lg">
+                                                        <thead>
+                                                        <tr>
+                                                            <th class="text-left"></th>
+                                                            <th class="text-center">Name</th>
+                                                            <th class="text-center">Designation</th>
+                                                        </tr>
+                                                        </thead>
+
+                                                        <tbody>
+                                                        <tr v-for="personnel in $page.props.personnels" :key="personnel.id">
+                                                            <td>
+                                                            <v-checkbox
+                                                                v-model="add_product.campus"
+                                                                :value="personnel.id"
+                                                                hide-details
+                                                            ></v-checkbox>
+                                                            </td>
+
+                                                            <td class="text-center">{{ personnel.first_name }} {{ personnel.last_name }}</td>
+                                                            <td class="text-center">{{ personnel.designation }}</td>
+                                                        </tr>
+                                                        </tbody>
+                                                    </v-table>
                                                 </div>
-
-                                                <v-dialog v-model="previewImageDialog" max-width="400">
-                                                    <v-card>
-                                                        <!-- Image preview -->
-                                                        <div v-if="previewUrl" height="400">
-                                                            <v-img :src="previewUrl" alt="Preview" cover></v-img>
-                                                        </div>
-                                                        <div v-else class="text-center">
-                                                            <v-empty-state
-                                                                action-text="Okay, thanks"
-                                                                image="/storage/default/no_data.svg"
-                                                                text="The system failed to preview your image. Have you uploaded it yet?"
-                                                                title="No image found"
-                                                                @click:action="previewImageDialog = false"
-                                                            ></v-empty-state>
-                                                        </div>
-                                                    </v-card>
-                                                </v-dialog>
                                             </div>
 
-                                            <div class="mb-2">
-                                                <v-select
-                                                    clearable
-                                                    label="Product category"
-                                                    :items="['Category 1', 'Category 2']"
-                                                    multiple
-                                                    variant="outlined"
-                                                ></v-select>
+                                            <v-divider></v-divider>
+                                            <v-card-actions>
+                                                <v-spacer></v-spacer>
+                                                <v-btn
+                                                    text="Close"
+                                                    variant="plain"
+                                                    @click="dialog = false"
+                                                ></v-btn>
 
-                                            </div>
-
-                                            <div class="mb-2">
-                                                <v-text-field clearable label="Product name" variant="outlined" class="focus:outline-none focus:ring-0"></v-text-field>
-                                            </div>
-
-                                            <div class="mb-2">
-                                                <v-row>
-                                                    <v-col>
-                                                        <v-number-input
-                                                            :reverse="false"
-                                                            controlVariant="default"
-                                                            label="Product quantity"
-                                                            :hideInput="false"
-                                                            :inset="false"
-                                                            variant="outlined"
-                                                        ></v-number-input>
-                                                    </v-col>
-                                                    <v-col>
-                                                        <v-number-input
-                                                            :reverse="false"
-                                                            controlVariant="default"
-                                                            label="Product price"
-                                                            :hideInput="false"
-                                                            :inset="false"
-                                                            variant="outlined"
-                                                            precision="2"
-                                                        ></v-number-input>
-                                                    </v-col>
-                                                </v-row>
-                                            </div>
+                                                <v-btn
+                                                    color="primary"
+                                                    text="Save"
+                                                    variant="tonal"
+                                                    type="submit"
+                                                    :class="{ 'opacity-25': add_product.processing }"
+                                                    :disabled="add_product.processing"
+                                                ></v-btn>
+                                            </v-card-actions>
                                         </form>
                                     </div>
                                 </v-card-text>
-                                <v-divider></v-divider>
-                                <v-card-actions>
-                                    <v-spacer></v-spacer>
-                                    <v-btn
-                                        text="Close"
-                                        variant="plain"
-                                        @click="dialog = false"
-                                    ></v-btn>
-
-                                    <v-btn
-                                        color="primary"
-                                        text="Save"
-                                        variant="tonal"
-                                        @click="addProduct"
-                                    ></v-btn>
-                                </v-card-actions>
                             </v-card>
                         </v-dialog>
                     </div>
@@ -845,9 +918,9 @@ useFlashWatcher("inventory.display")
 
 
                 <!-- pdf generation  -->
-                 <div>
+                <div>
                     <InventoryListPDF v-show="isExporting" ref="pdfSection" :current_user="current_user" :inventories="$page.props.inventories"></InventoryListPDF>
-                 </div>
+                </div>
             </div>
         </div>
     </AuthenticatedLayout>
@@ -886,99 +959,88 @@ import ActionButton from '@/Components/ActionButton.vue';
                 sortable: false,
             },
             {
-                title: 'Image',
+                title: 'NAME ',
                 align: 'start',
-                key: 'image',
+                key: 'name',
                 sortable: true,
             },
             {
-                title: 'Campus',
+                title: 'PRODUCT NAME',
                 align: 'start',
-                key: 'campus',
-                sortable: true,
+                key: 'product_name',
+                sortable: false,
             },
             {
-                title: 'Enterprise',
+                title: 'RESERVE QUANTITY',
                 align: 'start',
-                key: 'enterprise_name',
-                sortable: true,
-            },
-            {
-                title: 'Quantity',
-                align: 'center',
                 key: 'quantity',
                 sortable: true,
             },
             {
-                title: 'Unit',
-                align: 'center',
-                key: 'unit',
-                sortable: true,
-            },
-            {
-                title: 'Price',
-                align: 'center',
+                title: 'PRODUCT PRICE',
+                align: 'start',
                 key: 'price',
                 sortable: true,
             },
             {
-                title: 'Status',
+                title: 'CAMPUS',
                 align: 'center',
-                key: 'enterprise_status',
+                key: 'campus',
                 sortable: true,
             },
             {
-                title: 'Last Modified',
-                align: 'start',
-                key: 'last_modified',
+                title: 'DATE & TIME PUCHASED',
+                align: 'center',
+                key: 'purchase',
                 sortable: true,
             },
             {
-                title: 'Sales',
-                align: 'start',
-                key: 'sales',
-                sortable: false,
+                title: 'STUDENT NUMBER',
+                align: 'center',
+                key: 'id_number',
+                sortable: true,
             },
             {
-                title: 'Actions',
-                align: 'end',
-                key: 'actions',
+                title: 'ORDER STATUS',
+                align: 'center',
+                key: 'order',
+                sortable: true,
+            },
+            {
+                title: 'DATE & TIME PAID',
+                align: 'center',
+                key: 'paid',
+                sortable: true,
+            },
+            {
+                title: 'ACTION',
+                align: 'center',
+                key: 'action',
                 sortable: false,
             },
+            // {
+            //     title: 'Sales',
+            //     align: 'start',
+            //     key: 'sales',
+            //     sortable: false,
+            // },
+            // {
+            //     title: 'Actions',
+            //     align: 'end',
+            //     key: 'actions',
+            //     sortable: false,
+            // },
         ],
-        products: [
-          {
-            number: 1,
-            id: 1,
-            image: 'product_placeholder.jpg',
-            product: 'ID Lace',
-            quantity: 500,
-            price: 100,
-            product_status: 'Available',
-            last_modified: '2025-06-13 8:24 PM'
-          },
-          {
-            number: 2,
-            id: 2,
-            image: 'product_placeholder.jpg',
-            product: 'PE Uniform',
-            quantity: 10,
-            price: 350,
-            product_status: 'Not Available',
-            last_modified: '2025-06-13 8:24 PM'
-          },
-        ],
-
         breadcrumbs_items: [
             {
-                title: 'Transaction',
+                title: 'Inventory',
                 active: false
             },
             {
-                title: 'Inventory',
+                title: 'Transaction List',
                 active: true
             },
-        ]
+        ],
       }
     },
     methods: {

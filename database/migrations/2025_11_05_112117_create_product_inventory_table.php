@@ -11,17 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('inventories', function (Blueprint $table) {
+        Schema::create('product_inventory', function (Blueprint $table) {
             $table->id();
-            $table->string('image')->default('product_placeholder.jpg');
+            // $table->string('image')->default('product_placeholder.jpg');
             $table->bigInteger('campus_id')->unsigned()->nullable();
             $table->foreign('campus_id')->references('id')->on('campuses');
-            $table->bigInteger('enterprise_id')->unsigned()->nullable();
-            $table->foreign('enterprise_id')->references('id')->on('enterprises');
-            $table->decimal('price', 10, 2)->nullable();
-            $table->enum('unit', ['pc', 'kg', 'm', 'l'])->nullable();
+            // $table->bigInteger('enterprise_id')->unsigned()->nullable();
+            // $table->foreign('enterprise_id')->references('id')->on('enterprises');
+            $table->string('product_name', 255);
+            $table->integer('quantity');
+            $table->integer('low');
+            $table->decimal('price', 10, 2);
+            $table->string('category', 255);
+            //$table->enum('unit', ['pc', 'kg', 'm', 'l'])->nullable();
             $table->enum('status', ['Available', 'Not Available'])->default('Available')->nullable();
-            $table->bigInteger('updated_by')->unsigned()->nullable();
             $table->timestamps();
         });
     }
@@ -31,6 +34,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('inventories');
+        Schema::dropIfExists('product_inventory');
     }
 };

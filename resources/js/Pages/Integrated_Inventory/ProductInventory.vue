@@ -22,6 +22,7 @@ const isExporting = ref(false)
 const pdfSection = ref(null)
 const add_new_dialog = ref(false)
 const edit_dialog = ref(false)
+const dialog = ref(false);
 
 const add_new_form = useForm({
     enterprise_id: '',
@@ -30,6 +31,13 @@ const add_new_form = useForm({
     quantity: 0,
     price: 0.00,
     unit: ''
+})
+
+const add_product = useForm({
+    product_name: '',
+    price: 0.00,
+    quantity: 0,
+    low: 0,
 })
 
 const form = useForm({
@@ -41,188 +49,180 @@ const form = useForm({
 });
 
 const submit = () => {
-    // console.log(add_new_form.data());
-    add_new_form.post(route('inventory.store'), {
+    // console.log(add_user_form.data());
+    add_enterprise_form.post(route('enterprises.store'), {
         onSuccess: () => {
-            add_new_form.reset()
-            add_new_dialog.value = false // Close dialog
+            add_enterprise_form.reset()
+            add_enterprise_dialog.value = false // Close dialog
         },
     });
 };
 
-const formatPrintedDate = () => {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
+const submitProduct = () => {
+    //console.log(add_product.data());
+    add_product.post(route('integrated_inventory.store'), {
+        onSuccess: () => {
+            add_product.reset()
+            dialog.value = false // Close dialog
+        },
+    });
+};
 
-  let hours = now.getHours()
-  const minutes = String(now.getMinutes()).padStart(2, '0')
-  const ampm = hours >= 12 ? 'PM' : 'AM'
-  hours = hours % 12 || 12 // convert 0 to 12
-
-  return `${year}-${month}-${day} at ${hours}:${minutes} ${ampm}`
+// define the functions here
+const export_excel_report = () => {
+  console.log("Excel Export clicked")
+  // your excel export logic here...
 }
 
-const generatePdfTitle = () => {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  const reportTitle = 'InventoryReport'
-  const randomId = Math.random().toString(36).substring(2, 8).toUpperCase()
+const export_pdf_report = () => {
+    console.log("PDF Export clicked")
+    const formatPrintedDate = () => {
+        const now = new Date()
+        const year = now.getFullYear()
+        const month = String(now.getMonth() + 1).padStart(2, '0')
+        const day = String(now.getDate()).padStart(2, '0')
 
-  return `${year}-${month}-${day}_${reportTitle}_${randomId}`
-}
+        let hours = now.getHours()
+        const minutes = String(now.getMinutes()).padStart(2, '0')
+        const ampm = hours >= 12 ? 'PM' : 'AM'
+        hours = hours % 12 || 12 // convert 0 to 12
 
-const generatePDF = async () => {
-    isExporting.value = true
-  await nextTick() // Ensure content is rendered
-
-  const doc = new jsPDF('p', 'mm', 'a4')
-  const pdfTitle = generatePdfTitle()
-  const pageWidth = doc.internal.pageSize.getWidth()
-  const pageHeight = doc.internal.pageSize.getHeight()
-
-  doc.setProperties({ title: pdfTitle })
-
-  const logo = new Image()
-  logo.src = '/storage/isu_seal.png' // Make sure this exists in public folder
-
-  logo.onload = async () => {
-    const canvas = await html2canvas(pdfSection.value.$el, { scale: 2 })
-    const imgData = canvas.toDataURL('image/png')
-
-    const contentHeight = (canvas.height * 210) / canvas.width
-    const totalPages = Math.ceil(contentHeight / pageHeight)
-
-    for (let i = 0; i < totalPages; i++) {
-      if (i !== 0) doc.addPage()
-
-      // === HEADER ===
-      doc.addImage(logo, 'PNG', 15, 10, 18, 18)
-      doc.setFontSize(11)
-      doc.setTextColor(0)
-      doc.text('Republic of the Philippines', 40, 15)
-      doc.setFontSize(13)
-      doc.setFont('helvetica', 'bold')
-      doc.text('ISABELA STATE UNIVERSITY', 40, 20)
-      doc.setFontSize(11)
-      doc.setFont('helvetica', 'normal')
-      doc.text('Echague, Isabela', 40, 25)
-      doc.setLineWidth(0.1)
-      doc.line(10, 30, pageWidth - 10, 30)
-
-      // === CONTENT ===
-      doc.addImage(
-        imgData,
-        'PNG',
-        10,
-        35,
-        190,
-        0,
-        '',
-        'FAST',
-        0,
-        i * pageHeight * (canvas.width / 210)
-      )
-
-      // === FOOTER ===
-    doc.setFillColor(255, 255, 255)
-    doc.rect(0, pageHeight - 20, pageWidth, 20, 'F')
-
-    // === Left: Page number ===
-    const pageText = `Page ${i + 1} of ${totalPages}`
-    doc.setFontSize(10)
-    doc.setTextColor(0)
-    doc.text(pageText, 10, pageHeight - 10) // left aligned
-
-    // === Right: Printed by and Date ===
-    const printedBy = `Printed by: ${current_user.name}`.toUpperCase()
-    const printedDate = formatPrintedDate().toUpperCase()
-
-    // Printed by
-    doc.setFontSize(8)
-    doc.setTextColor(0) // black
-    const printedByWidth = doc.getTextWidth(printedBy)
-    doc.text(printedBy, pageWidth - printedByWidth - 10, pageHeight - 10)
-
-    // Printed date (lighter gray)
-    doc.setTextColor(160, 160, 160) // lighter gray
-    const printedDateWidth = doc.getTextWidth(printedDate)
-    doc.text(printedDate, pageWidth - printedDateWidth - 10, pageHeight - 6)
-
-
+        return `${year}-${month}-${day} at ${hours}:${minutes} ${ampm}`
     }
 
-    // doc.save('isu-enterprise-report.pdf')
+    const generatePdfTitle = () => {
+        const now = new Date()
+        const year = now.getFullYear()
+        const month = String(now.getMonth() + 1).padStart(2, '0')
+        const day = String(now.getDate()).padStart(2, '0')
+        const reportTitle = 'InventoryReport'
+        const randomId = Math.random().toString(36).substring(2, 8).toUpperCase()
 
-    // === STREAM the PDF ===
-    doc.output('dataurlnewwindow') // Stream view in new tab
-    isExporting.value = false
-  }
+        return `${year}-${month}-${day}_${reportTitle}_${randomId}`
+    }
+
+    const generatePDF = async () => {
+        isExporting.value = true
+        await nextTick() // Ensure content is rendered
+
+        const doc = new jsPDF('p', 'mm', 'a4')
+        const pdfTitle = generatePdfTitle()
+        const pageWidth = doc.internal.pageSize.getWidth()
+        const pageHeight = doc.internal.pageSize.getHeight()
+
+        doc.setProperties({ title: pdfTitle })
+
+        const logo = new Image()
+        logo.src = '/storage/isu_seal.png' // Make sure this exists in public folder
+
+        logo.onload = async () => {
+            const canvas = await html2canvas(pdfSection.value.$el, { scale: 2 })
+            const imgData = canvas.toDataURL('image/png')
+
+            const contentHeight = (canvas.height * 210) / canvas.width
+            const totalPages = Math.ceil(contentHeight / pageHeight)
+
+            for (let i = 0; i < totalPages; i++) {
+            if (i !== 0) doc.addPage()
+
+            // === HEADER ===
+            doc.addImage(logo, 'PNG', 15, 10, 18, 18)
+            doc.setFontSize(11)
+            doc.setTextColor(0)
+            doc.text('Republic of the Philippines', 40, 15)
+            doc.setFontSize(13)
+            doc.setFont('helvetica', 'bold')
+            doc.text('ISABELA STATE UNIVERSITY', 40, 20)
+            doc.setFontSize(11)
+            doc.setFont('helvetica', 'normal')
+            doc.text('Echague, Isabela', 40, 25)
+            doc.setLineWidth(0.1)
+            doc.line(10, 30, pageWidth - 10, 30)
+
+            // === CONTENT ===
+            doc.addImage(
+                imgData,
+                'PNG',
+                10,
+                35,
+                190,
+                0,
+                '',
+                'FAST',
+                0,
+                i * pageHeight * (canvas.width / 210)
+            )
+
+            // === FOOTER ===
+            doc.setFillColor(255, 255, 255)
+            doc.rect(0, pageHeight - 20, pageWidth, 20, 'F')
+
+            // === Left: Page number ===
+            const pageText = `Page ${i + 1} of ${totalPages}`
+            doc.setFontSize(10)
+            doc.setTextColor(0)
+            doc.text(pageText, 10, pageHeight - 10) // left aligned
+
+            // === Right: Printed by and Date ===
+            const printedBy = `Printed by: ${current_user.name}`.toUpperCase()
+            const printedDate = formatPrintedDate().toUpperCase()
+
+            // Printed by
+            doc.setFontSize(8)
+            doc.setTextColor(0) // black
+            const printedByWidth = doc.getTextWidth(printedBy)
+            doc.text(printedBy, pageWidth - printedByWidth - 10, pageHeight - 10)
+
+            // Printed date (lighter gray)
+            doc.setTextColor(160, 160, 160) // lighter gray
+            const printedDateWidth = doc.getTextWidth(printedDate)
+            doc.text(printedDate, pageWidth - printedDateWidth - 10, pageHeight - 6)
+
+
+            }
+
+            // doc.save('isu-enterprise-report.pdf')
+
+            // === STREAM the PDF ===
+            //doc.output('dataurlnewwindow') // Stream view in new tab
+            doc.save(`${pdfTitle}.pdf`)
+            isExporting.value = false
+        }
+    }
+    generatePDF()
 }
 
-// success or error alert - swal
-// watch(
-//   () => page.props.flash,
-//   (flash) => {
-//     if (flash?.success) {
-//       Swal.fire({
-//         icon: 'success',
-//         title: 'Success',
-//         text: flash.success,
-//         confirmButtonColor: '#3085d6',
-//         didOpen: () => {
-//           const confirmBtn = Swal.getConfirmButton()
-//           if (confirmBtn) confirmBtn.style.color = "white" // ✅ custom text color
-//         }
-//       })
-//     } else if (flash?.error) {
-//       Swal.fire({
-//         icon: 'error',
-//         title: 'Error',
-//         text: flash.error,
-//         confirmButtonColor: '#d33',
-//         didOpen: () => {
-//           const confirmBtn = Swal.getConfirmButton()
-//           if (confirmBtn) confirmBtn.style.color = "white" // ✅ custom text color
-//         }
-//       })
-//     }
-//   },
-//   { immediate: true }
-// )
 
-//
 
 // edit inventory
 const edit_inventory_dialog = ref(false);
 const edit_inventory_form = useForm({
     id: '',
-    enterprise_name: '',
+    product_name: '',
     quantity: 0,
     price: 0.00,
-    unit: '',
-    enterprise_status: ''
+    low: 0,
+    status: '',
+    category: '',
 });
 
 const handle_edit_inventory = (id) => {
     const inventory = page.props.inventories.find(inv => inv.id === id);
     if (inventory) {
         edit_inventory_form.id = inventory.id;
-        edit_inventory_form.enterprise_name = inventory.enterprise_name;
+        edit_inventory_form.product_name = inventory.product_name;
         edit_inventory_form.quantity = inventory.quantity;
         edit_inventory_form.price = inventory.price;
-        edit_inventory_form.unit = inventory.unit;
-        edit_inventory_form.enterprise_status = inventory.enterprise_status;
+        edit_inventory_form.low = inventory.low;
+        edit_inventory_form.status = inventory.status;
+        edit_inventory_form.category = inventory.category;
         edit_inventory_dialog.value = true; // Open dialog
     }
 };
 
 const update_inventory = () => {
     // console.log(edit_inventory_form)
-    edit_inventory_form.put(route('inventory.update', edit_inventory_form.id), {
+    edit_inventory_form.put(route('integrated_inventory.update', edit_inventory_form.id), {
         onSuccess: () => {
             edit_inventory_form.reset()
             edit_inventory_dialog.value = false // Close dialog
@@ -264,7 +264,7 @@ const handle_redirect = () => {
 };
 // end import existing iges
 
-useFlashWatcher("inventory.display")
+useFlashWatcher("integrated_inventory.display")
 </script>
 
 <template>
@@ -296,12 +296,24 @@ useFlashWatcher("inventory.display")
                                     <span
                                         :class="$vuetify.display.smAndDown ? 'text-lg font-weight-semibold' : 'text-2xl font-weight-semibold'"
                                     >
-                                        Inventory
+                                        Product Inventory
                                     </span>
                                 </div>
 
                                 <!-- Right Section: Responsive Button -->
                                 <div>
+                                <!-- Full button for medium and up -->
+                                <v-btn
+                                    v-if="!$vuetify.display.smAndDown"
+                                    class="ms-2 text-none tracking-normal"
+                                    prepend-icon="mdi-plus"
+                                    rounded="l"
+                                    text="Add Product"
+                                    variant="flat"
+                                    color="green-darken-4"
+                                    @click="dialog = true"
+                                ></v-btn>
+
                                 <!-- Full button for medium and up -->
                                 <v-btn
                                     v-if="!$vuetify.display.smAndDown"
@@ -360,38 +372,21 @@ useFlashWatcher("inventory.display")
                                             <option selected value="">All Campuses</option>
                                             <option v-for="campus in $page.props.campuses" :value="campus.id" :key="campus.id">{{ campus.campus }}</option>
                                         </SelectInput>
-                                        <SelectInput class="max-w-sm min-w-[200px]" v-model="filter.category">
+                                        <SelectInput class="max-w-sm min-w-[200px]" v-model="filter.status">
                                             <option disabled>
                                                 Filter by Status
                                             </option>
                                             <option value="" selected>
                                                 All Status
                                             </option>
-                                            <option value="Available">
-                                                Available
+                                            <option value="Paid">
+                                                Paid
                                             </option>
-                                            <option value="Not Available">
-                                                Not Available
+                                            <option value="Unpaid">
+                                                Unpaid
                                             </option>
-                                        </SelectInput>
-                                        <SelectInput class="max-w-sm min-w-[200px]" v-model="filter.unit">
-                                            <option disabled>
-                                                Filter by Unit
-                                            </option>
-                                            <option value="" selected>
-                                                All Unit
-                                            </option>
-                                            <option value="pc">
-                                                pc (piece/pieces)
-                                            </option>
-                                            <option value="kg">
-                                                kg (kilo/kilogram)
-                                            </option>
-                                            <option value="m">
-                                                m (meter/meters)
-                                            </option>
-                                            <option value="l">
-                                                l (liter/liters)
+                                            <option value="Cancelled">
+                                                Cancelled
                                             </option>
                                         </SelectInput>
                                     </FilterWrapper>
@@ -402,7 +397,7 @@ useFlashWatcher("inventory.display")
 
                             <v-data-table
                                 v-model:search="search"
-                                :filter-keys="['name']" :headers="header"
+                                :filter-keys="['product_name']" :headers="header"
                                 :items="$page.props.inventories" hover :loading="loading"
                             >
                                 <template v-slot:loading>
@@ -413,7 +408,7 @@ useFlashWatcher("inventory.display")
                                     <div class="text-start">{{ item.number }}</div>
                                 </template>
 
-                                <template v-slot:item.image="{ item }">
+                                <!-- <template v-slot:item.image="{ item }">
                                     <div class="my-2">
                                         <v-img
                                             :src="`/storage/uploads/products/${item.image}`"
@@ -421,6 +416,10 @@ useFlashWatcher("inventory.display")
                                             cover
                                         ></v-img>
                                     </div>
+                                </template> -->
+
+                                <template v-slot:item.product_name="{item}">
+                                    <div>{{ item.product_name }}</div>
                                 </template>
 
                                 <template v-slot:item.campus="{item}">
@@ -434,8 +433,12 @@ useFlashWatcher("inventory.display")
                                     </div>
                                 </template>
 
-                                <template v-slot:item.enterprise_status="{item}">
-                                    <v-chip size="small" class="ma-2" :color="item.enterprise_status == 'Available' ? 'green-darken-3' : 'red-darken-4'" label>{{ item.enterprise_status }}</v-chip>
+                                <template v-slot:item.status="{item}">
+                                    <v-chip size="small" class="ma-2" :color="item.status == 'Available' ? 'green-darken-3' : 'red-darken-4'" label>{{ item.status }}</v-chip>
+                                </template>
+
+                                <template v-slot:item.category="{item}">
+                                    <div>{{ item.category }}</div>
                                 </template>
 
                                 <template v-slot:item.last_modified="{ item }">
@@ -520,7 +523,8 @@ useFlashWatcher("inventory.display")
                                 </v-card-text>
                             </v-card>
                         </v-dialog>
-                        <!-- add or import product  -->
+
+                        <!-- add or import product to button creating new product-->
                         <v-dialog v-model="add_new_dialog" persistent max-width="600">
                             <v-card prepend-icon="mdi-cash-multiple" title="Import or Add New" class="pa-2">
                                 <v-card-text>
@@ -586,6 +590,13 @@ useFlashWatcher("inventory.display")
                                                                 <InputError class="mt-2" :message="add_new_form.errors.unit" />
                                                             </div>
                                                         </v-col>
+                                                        <v-col cols="12" :md="4" :lg="4">
+                                                            <div>
+                                                                <label for="unit" class="block mb-2 text-sm font-medium text-gray-900">Low Product <span class="text-red-500">*</span></label>
+                                                                <input type="number" id="low" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" placeholder="Enter quantity." v-model="add_new_form.quantity"/>
+                                                                <InputError class="mt-2" :message="add_new_form.errors.unit" />
+                                                            </div>
+                                                        </v-col>
                                                     </v-row>
                                                 </div>
                                             </div>
@@ -620,7 +631,7 @@ useFlashWatcher("inventory.display")
                                         <form @submit.prevent="update_inventory">
                                             <div class="mb-4">
                                                 <InputLabel for="enterprise" value="Enterprise" required="true"/>
-                                                <TextInput id="enterprise" type="text" class="w-full" v-model="edit_inventory_form.enterprise_name" disabled/>
+                                                <TextInput id="product_name" type="text" class="w-full" v-model="edit_inventory_form.product_name" disabled/>
                                             </div>
 
                                             <div class="mb-4">
@@ -636,24 +647,28 @@ useFlashWatcher("inventory.display")
                                                     <InputError class="mt-2" :message="edit_inventory_form.errors.quantity" />
                                                 </div>
                                                 <div class="w-full">
-                                                    <InputLabel for="unit" value="Unit" required="true"/>
-                                                    <SelectInput id="unit" v-model="edit_inventory_form.unit">
-                                                        <option disabled value="">-- Select unit --</option>
-                                                        <option value="pc">pc/s (piece/pieces)</option>
-                                                        <option value="kg">kg (kilogram)</option>
-                                                        <option value="m">m (meter)</option>
-                                                        <option value="l">l (liter)</option>
-                                                    </SelectInput>
+                                                    <InputLabel for="low" value="Low" required="true"/>
+                                                    <TextInput id="low" v-model="edit_inventory_form.low"/>
                                                 </div>
                                             </div>
                                             <div class="w-full">
                                                     <InputLabel for="status" value="Status" required="true"/>
-                                                    <SelectInput id="status" v-model="edit_inventory_form.enterprise_status">
+                                                    <SelectInput id="status" v-model="edit_inventory_form.status">
                                                         <option disabled value="">-- Select status --</option>
                                                         <option value="Available">Available</option>
                                                         <option value="Not Available">Not Available</option>
                                                     </SelectInput>
-                                                    <InputError class="mt-2" :message="edit_inventory_form.errors.enterprise_status" />
+                                                    <InputError class="mt-2" :message="edit_inventory_form.errors.status" />
+                                                </div>
+
+                                                <div class="mb-4">
+                                                    <label for="category" class="block mb-2 text-sm font-medium text-gray-900">Category <span class="text-red-500">*</span></label>
+                                                    <select id="category" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5" v-model="edit_inventory_form.category">
+                                                        <option disabled selected value="">-- Select category --</option>
+                                                        <option value="Agri-based">Agri-based</option>
+                                                        <option value="Non Agri-based">Non Agri-based</option>
+                                                    </select>
+                                                    <InputError class="mt-2" :message="edit_inventory_form.errors.category" />
                                                 </div>
 
                                             <!-- <div class="mb-4" v-if="add_new_form.enterprise_id === 0">
@@ -735,12 +750,10 @@ useFlashWatcher("inventory.display")
                         <v-dialog v-model="dialog" persistent max-width="800">
                             <v-card prepend-icon="mdi-package" title="Add Product" class="pa-2">
                                 <v-card-text>
-
-
                                     <div>
-                                        <form>
+                                        <form @submit.prevent="submitProduct">
                                             <!-- 1. Product image  -->
-                                            <div class="mb-6">
+                                            <!-- <div class="mb-6">
                                                 <label for="default-input" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Product image <span>(optional)</span></label>
                                                 <div class="flex items-center justify-center w-full">
                                                     <label for="dropzone-file" class="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600">
@@ -752,7 +765,7 @@ useFlashWatcher("inventory.display")
                                                             <p v-else class="mb-2 text-sm text-gray-500 dark:text-gray-400"><span class="font-semibold">Click to upload</span> or drag and drop</p>
                                                             <p class="text-xs text-gray-500 dark:text-gray-400">SVG, PNG, JPG or GIF (MAX. 800x400px)</p>
                                                         </div>
-                                                        <input id="dropzone-file" type="file" class="hidden" @change="handleFileChange" accept="image/*"/>
+                                                        <input id="image" type="file" class="hidden" @change="handleFileChange" accept="image/*"/>
                                                     </label>
                                                 </div>
                                                 <div v-if="previewUrl" class="d-flex">
@@ -762,7 +775,7 @@ useFlashWatcher("inventory.display")
 
                                                 <v-dialog v-model="previewImageDialog" max-width="400">
                                                     <v-card>
-                                                        <!-- Image preview -->
+                                                         Image preview
                                                         <div v-if="previewUrl" height="400">
                                                             <v-img :src="previewUrl" alt="Preview" cover></v-img>
                                                         </div>
@@ -777,9 +790,9 @@ useFlashWatcher("inventory.display")
                                                         </div>
                                                     </v-card>
                                                 </v-dialog>
-                                            </div>
+                                            </div> -->
 
-                                            <div class="mb-2">
+                                            <!-- <div class="mb-2">
                                                 <v-select
                                                     clearable
                                                     label="Product category"
@@ -788,10 +801,11 @@ useFlashWatcher("inventory.display")
                                                     variant="outlined"
                                                 ></v-select>
 
-                                            </div>
+                                            </div> -->
 
                                             <div class="mb-2">
-                                                <v-text-field clearable label="Product name" variant="outlined" class="focus:outline-none focus:ring-0"></v-text-field>
+                                                <v-text-field clearable label="Product name" variant="outlined" v-model = "add_product.product_name" class="focus:outline-none focus:ring-0"></v-text-field>
+                                                <InputError class="mt-2" :message="add_product.product_name" />
                                             </div>
 
                                             <div class="mb-2">
@@ -801,43 +815,62 @@ useFlashWatcher("inventory.display")
                                                             :reverse="false"
                                                             controlVariant="default"
                                                             label="Product quantity"
+                                                            v-model = "add_product.quantity"
                                                             :hideInput="false"
                                                             :inset="false"
                                                             variant="outlined"
                                                         ></v-number-input>
+                                                        <InputError class="mt-2" :message="add_product.quantity" />
                                                     </v-col>
                                                     <v-col>
                                                         <v-number-input
                                                             :reverse="false"
                                                             controlVariant="default"
                                                             label="Product price"
+                                                            v-model = "add_product.price"
                                                             :hideInput="false"
                                                             :inset="false"
                                                             variant="outlined"
                                                             precision="2"
                                                         ></v-number-input>
+                                                        <InputError class="mt-2" :message="add_product.price" />
+                                                    </v-col>
+                                                    <v-col>
+                                                        <v-number-input
+                                                            :reverse="false"
+                                                            controlVariant="default"
+                                                            label="Low Product"
+                                                            v-model = "add_product.low"
+                                                            :hideInput="false"
+                                                            :inset="false"
+                                                            variant="outlined"
+                                                            precision="3"
+                                                        ></v-number-input>
+                                                        <InputError class="mt-2" :message="add_product.low" />
                                                     </v-col>
                                                 </v-row>
                                             </div>
+                                            <v-divider></v-divider>
+                                            <v-card-actions>
+                                                <v-spacer></v-spacer>
+                                                <v-btn
+                                                    text="Close"
+                                                    variant="plain"
+                                                    @click="dialog = false"
+                                                ></v-btn>
+
+                                                <v-btn
+                                                    color="primary"
+                                                    text="Save"
+                                                    variant="tonal"
+                                                    type="submit"
+                                                    :class="{ 'opacity-25': add_product.processing }"
+                                                    :disabled="add_product.processing"
+                                                ></v-btn>
+                                            </v-card-actions>
                                         </form>
                                     </div>
                                 </v-card-text>
-                                <v-divider></v-divider>
-                                <v-card-actions>
-                                    <v-spacer></v-spacer>
-                                    <v-btn
-                                        text="Close"
-                                        variant="plain"
-                                        @click="dialog = false"
-                                    ></v-btn>
-
-                                    <v-btn
-                                        color="primary"
-                                        text="Save"
-                                        variant="tonal"
-                                        @click="addProduct"
-                                    ></v-btn>
-                                </v-card-actions>
                             </v-card>
                         </v-dialog>
                     </div>
@@ -845,9 +878,9 @@ useFlashWatcher("inventory.display")
 
 
                 <!-- pdf generation  -->
-                 <div>
+                <div>
                     <InventoryListPDF v-show="isExporting" ref="pdfSection" :current_user="current_user" :inventories="$page.props.inventories"></InventoryListPDF>
-                 </div>
+                </div>
             </div>
         </div>
     </AuthenticatedLayout>
@@ -886,35 +919,41 @@ import ActionButton from '@/Components/ActionButton.vue';
                 sortable: false,
             },
             {
-                title: 'Image',
+                title: 'Product Name',
                 align: 'start',
-                key: 'image',
-                sortable: true,
+                key: 'product_name',
+                sortable: false,
             },
+            //{
+            //    title: 'Image',
+            //    align: 'start',
+            //    key: 'image',
+            //    sortable: true,
+            //},
             {
                 title: 'Campus',
                 align: 'start',
                 key: 'campus',
                 sortable: true,
             },
-            {
-                title: 'Enterprise',
-                align: 'start',
-                key: 'enterprise_name',
-                sortable: true,
-            },
+            //{
+            //    title: 'Enterprise',
+            //    align: 'start',
+            //    key: 'enterprise_name',
+            //    sortable: true,
+            //},
             {
                 title: 'Quantity',
                 align: 'center',
                 key: 'quantity',
                 sortable: true,
             },
-            {
-                title: 'Unit',
-                align: 'center',
-                key: 'unit',
-                sortable: true,
-            },
+            //{
+            //    title: 'Unit',
+            //    align: 'center',
+            //    key: 'unit',
+            //    sortable: true,
+            //},
             {
                 title: 'Price',
                 align: 'center',
@@ -924,7 +963,13 @@ import ActionButton from '@/Components/ActionButton.vue';
             {
                 title: 'Status',
                 align: 'center',
-                key: 'enterprise_status',
+                key: 'status',
+                sortable: true,
+            },
+            {
+                title: 'Category',
+                align: 'start',
+                key: 'category',
                 sortable: true,
             },
             {
@@ -971,11 +1016,11 @@ import ActionButton from '@/Components/ActionButton.vue';
 
         breadcrumbs_items: [
             {
-                title: 'Transaction',
+                title: 'Inventory',
                 active: false
             },
             {
-                title: 'Inventory',
+                title: 'Product Inventory',
                 active: true
             },
         ]

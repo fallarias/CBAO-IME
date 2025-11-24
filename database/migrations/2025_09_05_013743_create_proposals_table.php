@@ -27,7 +27,7 @@ return new class extends Migration
             $table->timestamps();
             $table->bigInteger('updated_by')->unsigned()->nullable();
             $table->foreign('updated_by')->references('id')->on('users');
-            $table->timestamp('updated_at')->nullable();
+            $table->timestamp('updated_ats')->nullable();
         });
     }
 

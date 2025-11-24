@@ -72,4 +72,9 @@ class User extends Authenticatable
         return $this->belongsTo(Campus::class, 'campus_id');
     }
 
+    public function product_name()
+    {
+    return $this->hasMany(IntegratedInventory::class, 'campus_id', 'campus_id');
+    }
+
 }

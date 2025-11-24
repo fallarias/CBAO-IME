@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EnterpriseController;
 use App\Http\Controllers\IncomeController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\IntegratedInventoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -92,6 +93,27 @@ Route::middleware('auth')->group(function () {
         Route::get('/inventory/{id}/view', 'view')->name('inventory.view');
     });
 
+    Route::controller(IntegratedInventoryController::class)->group(function(){
+        //PRODUCT INVENTORY
+        Route::get('/integrated/inventory', 'display')->name('integrated_inventory.display');
+        Route::post('/integrated/inventory', 'store')->name('integrated_inventory.store');
+        Route::put('/integrated/inventory/{id}', 'update')->name('integrated_inventory.update');
+        Route::post('/integrated/inventory/import', 'import')->name('integrated_inventory.import');
+        //SALES REPORTS
+        Route::get('/integrated/inventory/sales', 'display_sales')->name('integrated_inventory.display_sales');
+        Route::get('/integrated/inventory/sales-per-product', 'salesPerProduct');
+        Route::get('/integrated/inventory/monthly-sales', 'monthlySales');
+        //TRANSACTION LIST
+        Route::get('/integrated/inventory/transaction', 'display_transaction')->name('integrated_inventory.display_transaction');
+        Route::post('/integrated/inventory/transaction/purchase', 'transaction_store')->name('transaction.store');
+        Route::put('/integrated/inventory/transaction/status', 'status_update')->name('integrated_inventory.status_update');
+        Route::post('/integrated/inventory/transaction/reservation', 'transaction_reservation')->name('reservation.store');
+    });
+
+    Route::controller(IntegratedInventoryController::class)->group(function(){
+        Route::get('/integrated/inventory/{id}/view', 'view')->name('integrated_inventory.view');
+    });
+
     Route::controller(IncomeController::class)->group(function(){
         Route::get('/income', 'display')->name('income.display');
         Route::post('/income', 'store')->name('income.store');
@@ -126,28 +148,28 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware(['auth'])->get('/proposals/view/{filename}', function ($filename) {
         $path = 'proposals/' . $filename;
-    
+
         // Check if file exists in private storage
         if (!Storage::disk('local')->exists($path)) {
             abort(404, 'File not found');
         }
-    
+
         $user = Auth::user();
-    
+
         // Find the proposal by file path
         $proposal = Proposal::where('proposal_file', 'proposals/' . $filename)->first();
-    
+
         if (!$proposal) {
             abort(404, 'Proposal record not found');
         }
-    
+
         // Authorization check:
         // - Admin can view all
         // - User can only view their own
         if ($user->role !== 'Admin' && $proposal->user_id !== $user->id) {
             abort(403, 'Unauthorized access to this file');
         }
-    
+
         // Stream the PDF securely
         return response()->file(
             Storage::disk('local')->path($path),
